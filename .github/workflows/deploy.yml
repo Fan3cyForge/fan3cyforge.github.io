@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # <-- 呢步最重要！負責將你的檔案載入虛擬主機
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -18,7 +18,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'  # 告訴系統直接佈署根目錄下的所有檔案
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
