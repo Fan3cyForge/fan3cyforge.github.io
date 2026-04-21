@@ -1,383 +1,158 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-HK">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>3D 列印常見錯誤與除錯知識庫 (AI 專用)</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-body {
-    background-color: #0f172a;
-    color: #e2e8f0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-.glass-card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-}
-.chart-container {
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    height: 300px;
-    max-height: 400px;
-}
-@media (min-width: 768px) {
-    .chart-container {
-        height: 350px;
-    }
-}
-.accent-cyan { color: #22d3ee; }
-.accent-amber { color: #fbbf24; }
-.accent-rose { color: #f43f5e; }
-.accent-purple { color: #c084fc; }
-.bg-cyan-glow { background-color: rgba(34, 211, 238, 0.1); border: 1px solid rgba(34, 211, 238, 0.3); }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan³cy Forge 學院系統</title>
+    <style>
+        :root {
+            --bg-color: #0c0f17;
+            --panel-bg: #151a27;
+            --cyber-blue: #4689cc;
+            --forge-orange: #c27e65;
+            --text-main: #e0e6ed;
+            --text-muted: #8cd3fe;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .ai-interface {
+            background-color: var(--panel-bg);
+            border: 1px solid rgba(70, 137, 204, 0.3);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+        .title {
+            color: var(--cyber-blue);
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .category-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .category-card {
+            background-color: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+        }
+        .category-card:hover {
+            border-color: var(--forge-orange);
+            background-color: rgba(194, 126, 101, 0.1);
+            transform: translateY(-2px);
+        }
+        .card-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+        .card-content h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+        .card-content p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .assistant-msg {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background-color: var(--cyber-blue);
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #fff;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .msg-bubble {
+            background-color: rgba(70, 137, 204, 0.1);
+            padding: 12px 18px;
+            border-radius: 0 16px 16px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+    </style>
 </head>
-<body class="antialiased p-4 md:p-8">
+<body>
+    <div class="ai-interface">
+        <div class="header">
+            <h1 class="title">Fan³cy Forge</h1>
+            <p class="subtitle">AI 自動化教育與數位鍛造中心</p>
+        </div>
+        
+        <div class="assistant-msg">
+            <div class="avatar">AI</div>
+            <div class="msg-bubble">
+                歡迎進入 Fan³cy Forge 系統。KimChi (建模與打印) 與 MoChi (插畫與定色) 隨時為使用者提供支援。請選擇下方資料庫進行存取：
+            </div>
+        </div>
 
-<header class="max-w-7xl mx-auto mb-10 text-center">
-    <div class="inline-block p-4 rounded-full bg-slate-800 mb-4 shadow-lg border border-slate-700">
-        <span class="text-4xl">🖨️</span>
+        <div class="category-grid">
+            <div class="category-card">
+                <div class="card-icon">🐯</div>
+                <div class="card-content">
+                    <h3>Lectures (新手入坑指南)</h3>
+                    <p>由 KimChi 管理的建模教學與基礎理論庫</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="card-icon">⚙️</div>
+                <div class="card-content">
+                    <h3>Assignments (鍛造任務)</h3>
+                    <p>實作練習與 3D 打印參數優化作業</p>
+                </div>
+            </div>
+            <div class="category-card">
+                <div class="card-icon">🐹</div>
+                <div class="card-content">
+                    <h3>Assets (物資庫)</h3>
+                    <p>由 MoChi 管理的模型檔案與色板資源</p>
+                </div>
+            </div>
+        </div>
     </div>
-    <h1 class="text-3xl md:text-5xl font-bold mb-4 tracking-tight text-white">3D 列印常見錯誤與診斷 <span class="accent-cyan">知識庫 (Knowledge Base)</span></h1>
-    <p class="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-        本知識庫專為 AI 訓練與快速檢索設計，統整了 FDM (熔融沉積成型) 3D 列印中最常見的物理缺陷、機械故障與切片參數設定錯誤。透過結構化的數據分析與標準化的除錯流程，確保診斷結果具備高準確度與可行性。
-    </p>
-</header>
-
-<main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-
-    <section class="glass-card p-6 lg:col-span-2 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div class="flex-1">
-            <h2 class="text-2xl font-bold mb-2 accent-amber">核心指標：失敗率與根源分析</h2>
-            <p class="text-slate-300 mb-4">
-                在分析超過一萬件列印失敗案例後，數據顯示絕大多數的列印中斷或品質瑕疵，皆可歸咎於五大核心變數。掌握這些指標，能大幅縮短故障排除的時間。
-            </p>
-        </div>
-        <div class="flex flex-col items-center bg-slate-900 p-6 rounded-lg border border-slate-700 shadow-inner">
-            <span class="text-6xl font-black accent-rose mb-2">80%</span>
-            <span class="text-sm text-slate-400 uppercase tracking-widest text-center">的列印失敗源自<br>首層附著與擠出異常</span>
-        </div>
-    </section>
-
-    <section class="glass-card p-6">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>📊</span> 全域錯誤分佈佔比
-        </h2>
-        <p class="text-sm text-slate-400 mb-6">
-            本圓餅圖呈現了不同類型錯誤的發生頻率。首層附著失敗 (First Layer Adhesion) 是最常見的致命錯誤，通常發生在列印的前 10 分鐘。其次為擠出機相關的牽絲與漏料問題。
-        </p>
-        <div class="chart-container">
-            <canvas id="errorDistributionChart"></canvas>
-        </div>
-    </section>
-
-    <section class="glass-card p-6 flex flex-col justify-center">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>⚠️</span> 首層附著失敗 (First Layer Issues) 解析
-        </h2>
-        <p class="text-sm text-slate-400 mb-6">
-            首層是所有 3D 列印的基石。如果 Z 軸偏移量 (Z-Offset) 設定錯誤，將導致列印件脫落或擠出機堵塞。以下為三種常見的噴嘴與熱床相對位置狀態：
-        </p>
-        
-        <div class="flex flex-col gap-4">
-            <div class="bg-slate-800 border-l-4 border-rose-500 p-4 rounded shadow">
-                <h3 class="font-bold text-rose-400 flex justify-between">噴嘴過高 (Too High) <span>❌</span></h3>
-                <p class="text-sm text-slate-300 mt-1">耗材呈現圓柱狀落在熱床上，條線之間有明顯空隙，附著力極差，容易在列印中途脫落產生「義大利麵條 (Spaghetti)」現象。</p>
-            </div>
-            
-            <div class="bg-slate-800 border-l-4 border-cyan-400 p-4 rounded shadow">
-                <h3 class="font-bold text-cyan-400 flex justify-between">完美距離 (Perfect) <span>✅</span></h3>
-                <p class="text-sm text-slate-300 mt-1">耗材被輕微壓扁，相鄰的線條緊密接合但沒有溢出，表面平整。Z 軸偏移量設定正確。</p>
-            </div>
-
-            <div class="bg-slate-800 border-l-4 border-amber-500 p-4 rounded shadow">
-                <h3 class="font-bold text-amber-400 flex justify-between">噴嘴過低 (Too Low) <span>❌</span></h3>
-                <p class="text-sm text-slate-300 mt-1">耗材被過度擠壓，導致邊緣翹起或熱床刮傷。嚴重時會造成擠出機馬達發出「喀喀」聲 (步進馬達失步) 及噴頭堵塞。</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="glass-card p-6 lg:col-span-2">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>🌡️</span> 材料特性與牽絲 (Stringing) 嚴重度關聯分析
-        </h2>
-        <p class="text-sm text-slate-400 mb-6 max-w-4xl">
-            牽絲是指列印頭在非擠出移動 (Travel) 過程中，耗材從噴嘴漏出而在模型之間留下細絲。此現象與列印溫度及材料黏性高度相關。此長條圖比較了四種常見材料在不同溫度區間的牽絲傾向，供調整回抽 (Retraction) 參數時參考。
-        </p>
-        <div class="chart-container" style="max-width: 900px;">
-            <canvas id="stringingMaterialChart"></canvas>
-        </div>
-    </section>
-
-    <section class="glass-card p-6">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>⚙️</span> 層錯位 (Layer Shifting) 肇因雷達圖
-        </h2>
-        <p class="text-sm text-slate-400 mb-6">
-            層錯位是嚴重的機械性失敗，會導致列印件在特定高度突然水平平移。透過雷達圖分析，可得知「噴頭碰撞翹曲部位」及「皮帶張力不當」是導致馬達失步與層錯位的最主要根源。
-        </p>
-        <div class="chart-container">
-            <canvas id="layerShiftRadarChart"></canvas>
-        </div>
-    </section>
-
-    <section class="glass-card p-6 flex flex-col justify-between">
-        <h2 class="text-xl font-bold mb-4 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>📉</span> 擠出異常光譜 (Extrusion Issues)
-        </h2>
-        <p class="text-sm text-slate-400 mb-4">
-            擠出問題可視為光譜的兩端，從過度擠出到擠出不足，皆會破壞模型結構與外觀。
-        </p>
-        
-        <div class="grid grid-cols-2 gap-4 h-full mt-2">
-            <div class="bg-cyan-glow p-4 rounded flex flex-col justify-center">
-                <div class="text-2xl mb-2 text-center">🔽</div>
-                <h3 class="font-bold text-cyan-400 text-center mb-2">擠出不足<br>(Under-extrusion)</h3>
-                <ul class="text-xs text-slate-300 list-disc pl-4 space-y-1">
-                    <li>列印件表面出現孔洞或海綿狀結構</li>
-                    <li>層與層之間結合力弱，易裂</li>
-                    <li>主因：噴嘴半堵塞、列印溫度過低、耗材直徑設定錯誤</li>
-                </ul>
-            </div>
-            
-            <div class="bg-slate-800 border border-amber-500/30 p-4 rounded flex flex-col justify-center">
-                <div class="text-2xl mb-2 text-center">🔼</div>
-                <h3 class="font-bold text-amber-400 text-center mb-2">過度擠出<br>(Over-extrusion)</h3>
-                <ul class="text-xs text-slate-300 list-disc pl-4 space-y-1">
-                    <li>列印件尺寸偏大，表面出現不規則凸起與水波紋</li>
-                    <li>頂部填充粗糙，噴頭移動時會刮到列印件</li>
-                    <li>主因：擠出倍率 (Flow Rate) 過高、耗材受潮膨脹</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-
-    <section class="glass-card p-6 lg:col-span-2">
-        <h2 class="text-xl font-bold mb-6 text-white border-b border-slate-600 pb-2 flex items-center gap-2">
-            <span>🛠️</span> 系統化除錯標準流程 (Troubleshooting Protocol)
-        </h2>
-        <p class="text-sm text-slate-400 mb-8">
-            為避免無效調整參數，應遵循由硬體到軟體、由基礎到進階的階段性除錯流程。
-        </p>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div class="relative bg-slate-800 p-5 rounded-lg border border-slate-600 flex flex-col items-center text-center shadow-lg z-10">
-                <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-xl font-bold text-cyan-400 mb-3 border-2 border-cyan-400">1</div>
-                <h3 class="font-bold text-white mb-2">機械與硬體檢查</h3>
-                <p class="text-xs text-slate-400">緊固所有螺絲，檢查皮帶張力是否如吉他弦般緊繃，確認滾輪無磨損且滑動順暢，清理導螺桿並重新上油。</p>
-            </div>
-            
-            <div class="relative bg-slate-800 p-5 rounded-lg border border-slate-600 flex flex-col items-center text-center shadow-lg z-10">
-                <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-xl font-bold text-cyan-400 mb-3 border-2 border-cyan-400">2</div>
-                <h3 class="font-bold text-white mb-2">熱床與首層校正</h3>
-                <p class="text-xs text-slate-400">預熱噴嘴與熱床至工作溫度，進行四角水平校正。列印單層測試片，微調 Z-Offset 直到線條平整融合。</p>
-            </div>
-
-            <div class="relative bg-slate-800 p-5 rounded-lg border border-slate-600 flex flex-col items-center text-center shadow-lg z-10">
-                <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-xl font-bold text-amber-400 mb-3 border-2 border-amber-400">3</div>
-                <h3 class="font-bold text-white mb-2">溫度與擠出校正</h3>
-                <p class="text-xs text-slate-400">列印溫度塔 (Temp Tower) 尋找特定耗材的最佳溫度。校正 E-Step 確保擠出機精準擠出 100mm 的耗材。</p>
-            </div>
-
-            <div class="relative bg-slate-800 p-5 rounded-lg border border-slate-600 flex flex-col items-center text-center shadow-lg z-10">
-                <div class="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center text-xl font-bold text-rose-400 mb-3 border-2 border-rose-400">4</div>
-                <h3 class="font-bold text-white mb-2">切片軟體參數微調</h3>
-                <p class="text-xs text-slate-400">針對牽絲問題列印回抽測試塔 (Retraction Tower)。調整冷卻風扇速度、列印速度與加速度以消除水波紋或震紋。</p>
-            </div>
-        </div>
-    </section>
-
-</main>
-
-<footer class="max-w-7xl mx-auto mt-12 mb-8 text-center text-slate-500 text-sm">
-    <p>3D Printing Diagnostic Knowledge Base | Generated for AI Context & Resolution Flow</p>
-</footer>
-
-<script>
-Chart.defaults.color = '#cbd5e1';
-Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-Chart.defaults.plugins.legend.labels.color = '#cbd5e1';
-
-function wrapLabel(label) {
-    if (label.length <= 12) return label;
-    let lines = [];
-    let currentLine = "";
-    for (let i = 0; i < label.length; i++) {
-        currentLine += label[i];
-        if (currentLine.length >= 10 && i !== label.length - 1) {
-            lines.push(currentLine);
-            currentLine = "";
-        }
-    }
-    if (currentLine) lines.push(currentLine);
-    return lines;
-}
-
-const tooltipConfig = {
-    callbacks: {
-        title: function(tooltipItems) {
-            const item = tooltipItems[0];
-            let label = item.chart.data.labels[item.dataIndex];
-            if (Array.isArray(label)) {
-                return label.join(' ');
-            } else {
-                return label;
-            }
-        }
-    }
-};
-
-const rawDonutLabels = [
-    "首層附著失敗脫落", 
-    "牽絲與噴嘴漏料", 
-    "擠出不足與堵塞", 
-    "馬達失步與層錯位", 
-    "其他硬體與散熱異常"
-];
-const donutLabels = rawDonutLabels.map(wrapLabel);
-
-const ctxDonut = document.getElementById('errorDistributionChart').getContext('2d');
-new Chart(ctxDonut, {
-    type: 'doughnut',
-    data: {
-        labels: donutLabels,
-        datasets: [{
-            data: [35, 25, 20, 12, 8],
-            backgroundColor: [
-                'rgba(34, 211, 238, 0.8)',
-                'rgba(192, 132, 252, 0.8)',
-                'rgba(244, 63, 94, 0.8)',
-                'rgba(251, 191, 36, 0.8)',
-                'rgba(148, 163, 184, 0.8)'
-            ],
-            borderColor: '#1e293b',
-            borderWidth: 2,
-            hoverOffset: 10
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
-            },
-            tooltip: tooltipConfig
-        },
-        cutout: '65%'
-    }
-});
-
-const rawBarLabels = [
-    "PLA (標準列印溫度 200°C)", 
-    "PETG (高黏性與高溫 235°C)", 
-    "TPU (柔性材料極易牽絲)", 
-    "ABS (高溫收縮不易牽絲)"
-];
-const barLabels = rawBarLabels.map(wrapLabel);
-
-const ctxBar = document.getElementById('stringingMaterialChart').getContext('2d');
-new Chart(ctxBar, {
-    type: 'bar',
-    data: {
-        labels: barLabels,
-        datasets: [{
-            label: '牽絲嚴重程度指數 (0-100)',
-            data: [30, 85, 95, 15],
-            backgroundColor: 'rgba(34, 211, 238, 0.7)',
-            borderColor: 'rgba(34, 211, 238, 1)',
-            borderWidth: 1,
-            borderRadius: 4
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                grid: {
-                    color: 'rgba(71, 85, 105, 0.3)'
-                }
-            },
-            x: {
-                grid: {
-                    display: false
-                }
-            }
-        },
-        plugins: {
-            tooltip: tooltipConfig
-        }
-    }
-});
-
-const rawRadarLabels = [
-    "噴頭碰撞翹曲部位",
-    "皮帶張力過鬆或過緊",
-    "步進馬達電流異常",
-    "列印加速度設定過高",
-    "Z軸螺桿咬合阻力"
-];
-const radarLabels = rawRadarLabels.map(wrapLabel);
-
-const ctxRadar = document.getElementById('layerShiftRadarChart').getContext('2d');
-new Chart(ctxRadar, {
-    type: 'radar',
-    data: {
-        labels: radarLabels,
-        datasets: [{
-            label: '導致層錯位之影響權重',
-            data: [90, 85, 60, 75, 40],
-            backgroundColor: 'rgba(251, 191, 36, 0.2)',
-            borderColor: 'rgba(251, 191, 36, 1)',
-            pointBackgroundColor: 'rgba(244, 63, 94, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(244, 63, 94, 1)',
-            borderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            r: {
-                angleLines: {
-                    color: 'rgba(71, 85, 105, 0.5)'
-                },
-                grid: {
-                    color: 'rgba(71, 85, 105, 0.5)'
-                },
-                pointLabels: {
-                    color: '#e2e8f0',
-                    font: {
-                        size: 11
-                    }
-                },
-                ticks: {
-                    display: false,
-                    max: 100,
-                    min: 0
-                }
-            }
-        },
-        plugins: {
-            tooltip: tooltipConfig,
-            legend: {
-                display: false
-            }
-        }
-    }
-});
-</script>
 </body>
 </html>
