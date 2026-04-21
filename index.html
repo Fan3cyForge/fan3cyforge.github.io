@@ -42,7 +42,7 @@
         .command-bar,
         .system-status {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 10px;
             border: 1px solid rgba(140, 211, 254, 0.25);
             background: rgba(12, 15, 23, 0.68);
@@ -54,7 +54,7 @@
         }
 
         .system-status {
-            grid-template-columns: 1.2fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr;
             margin-top: 14px;
         }
 
@@ -141,9 +141,9 @@
         }
 
         .mentor {
-            width: 94px;
+            width: 122px;
             position: absolute;
-            bottom: 14px;
+            bottom: 10px;
             opacity: 0.34;
             filter: grayscale(0.25) drop-shadow(0 0 5px rgba(140, 211, 254, 0.2));
             transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
@@ -156,8 +156,8 @@
             filter: drop-shadow(0 0 16px rgba(140, 211, 254, 0.75));
         }
 
-        #kimchi { left: 20px; }
-        #mochi { right: 20px; }
+        #kimchi { left: 2px; }
+        #mochi { right: 2px; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -181,8 +181,7 @@
     <div class="forge-shell">
         <header class="command-bar">
             <div class="bar-item">SYS.TIME: <span id="sys-time">--:--:--</span></div>
-            <div class="bar-item">BRANCH: <strong>Main Branch</strong></div>
-            <div class="bar-item">MENTOR: <span id="mentor-status">Online / KimChi Active</span></div>
+            <div class="bar-item">MENTOR: <span id="mentor-status">KimChi Active🟢</span></div>
         </header>
 
         <img src="assets/images/kimchi.png" id="kimchi" class="mentor" alt="KimChi">
@@ -209,10 +208,9 @@
         <a href="_posts/2026-04-21-test.html" class="aux-link">[TEST] 點擊開啟測試教案</a>
 
         <footer class="system-status">
-            <div class="bar-item">SYSTEM: <span>Fan³cy Forge v1.3.7</span></div>
-            <div class="bar-item">MODE: <strong>Operational</strong></div>
+            <div class="bar-item">SYSTEM: <span>F3F v1.3.7</span></div>
             <div class="bar-item">
-                MENTOR SWITCH:
+                MENTOR:
                 <select id="mentor-switcher" aria-label="Mentor Switcher" style="margin-left:8px; background:#111827; color:#8cd3fe; border:1px solid rgba(140, 211, 254, 0.35); border-radius:6px; padding:4px 6px; font-family:inherit;">
                     <option value="kimchi">KimChi</option>
                     <option value="mochi">MoChi</option>
@@ -247,8 +245,8 @@
             mochi.classList.toggle("active", !isKimchi);
 
             mentorStatus.textContent = isKimchi
-                ? "Online / KimChi Active"
-                : "Online / MoChi Active";
+                ? "KimChi Active🟢"
+                : "MoChi Active🟢";
         }
 
         updateSystemTime();
