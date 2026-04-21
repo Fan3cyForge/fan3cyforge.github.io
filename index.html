@@ -230,11 +230,17 @@
                 進入講義庫
                 <small>Access tactical learning modules</small>
             </a>
+            <a href="assignments/" class="menu-link" data-code="[02] ASSIGNMENTS">
+                提交鍛造任務
+                <small>Upload and verify mission outputs</small>
+            </a>
             <a href="assets/" class="menu-link" data-code="[03] ASSETS">
                 提取物資資產
                 <small>Retrieve files, kits, and artifacts</small>
             </a>
         </section>
+
+        <a href="viewer.html" class="aux-link">[TEST] 點擊開啟測試教案</a>
 
         <section id="model-preview" class="model-preview" aria-label="3D model preview"></section>
 
@@ -251,99 +257,109 @@
     </div>
 
     <script>
+        const defaultConfig = {
+            mentorGreetings: {
+                morning: "啟動程式",
+                afternoon: "教學鍛造模式",
+                evening: "超頻作業模式"
+            }
+        };
+
+        async function loadRuntimeConfig() {
+            try {
+                const response = await fetch("config.json", { cache: "no-store" });
+                if (!response.ok) {
+                    return defaultConfig;
+                }
+                const remoteConfig = await response.json();
+                return { ...defaultConfig, ...remoteConfig };
+            } catch (error) {
+                return defaultConfig;
+            }
+        }
+
+        function getTimeSlotGreeting(greetings) {
+            const hour = new Date().getHours();
+            if (hour < 12) {
+                return greetings.morning;
+            }
+            if (hour < 18) {
+                return greetings.afternoon;
+            }
+            return greetings.evening;
+        }
+
+        function updateSystemTime() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mm = String(now.getMinutes()).padStart(2, "0");
+            const ss = String(now.getSeconds()).padStart(2, "0");
+            const node = document.getElementById("sys-time");
+            if (node) {
+                node.textContent = `${hh}:${mm}:${ss}`;
+            }
+        }
+
+        function applyMentorHighlight(selectedMentor) {
+            const kimchi = document.getElementById("kimchi");
+            const mochi = document.getElementById("mochi");
+            const mentorStatus = document.getElementById("mentor-status");
+
+            if (!kimchi || !mochi || !mentorStatus) {
+                return;
+            }
+
+            const isKimchi = selectedMentor === "kimchi";
+            kimchi.classList.toggle("active", isKimchi);
+            mochi.classList.toggle("active", !isKimchi);
+            const mentorName = isKimchi ? "KimChi" : "MoChi";
+            mentorStatus.textContent = `${mentorName} Active🟢`;
+        }
+
         async function initForgeUI() {
-            const response = await fetch('config.json');
-            const runtimeConfig = await response.json();
-    
-            // 1. 設定標題
-            const subtitle = document.querySelector(".subtitle");
+            const runtimeConfig = await loadRuntimeConfig();
+            updateSystemTime();
+            setInterval(updateSystemTime, 1000);
+
+            const mentorSwitcher = document.getElementById("mentor-switcher");
+            if (mentorSwitcher) {
+                applyMentorHighlight(mentorSwitcher.value);
+                mentorSwitcher.addEventListener("change", (event) => {
+                    applyMentorHighlight(event.target.value);
+                });
+            }
+
+            const subtitle = document.querySelector(".forge-subtitle");
             if (subtitle && runtimeConfig.mentorGreetings) {
-                const hour = new Date().getHours();
-                let greeting = runtimeConfig.mentorGreetings.morning;
-                if (hour >= 12 && hour < 18) greeting = runtimeConfig.mentorGreetings.afternoon;
-                if (hour >= 18) greeting = runtimeConfig.mentorGreetings.evening;
+                const greeting = getTimeSlotGreeting(runtimeConfig.mentorGreetings);
                 subtitle.textContent = `The Forge // ${greeting}`;
             }
-    
-            // 2. 處理 3D 模型與控制項
-            if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled) {
+
+            if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled && runtimeConfig.modelViewer.src) {
                 const modelPreview = document.getElementById("model-preview");
                 if (modelPreview) {
-                    // 載入 Google Model Viewer 腳本
                     const script = document.createElement("script");
                     script.type = "module";
                     script.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
                     document.head.appendChild(script);
-    
+
                     modelPreview.style.display = "block";
-                    modelPreview.innerHTML = '<div style="margin-bottom:8px;color:#8cd3fe;font-size:12px;">3D SCENE INTERFACE</div>';
-    
-                    // 建立 3D 檢視器
+                    modelPreview.innerHTML = '<div style="margin-bottom:8px;color:#8cd3fe;">3D MODEL PREVIEW</div>';
                     const mv = document.createElement("model-viewer");
                     mv.setAttribute("src", runtimeConfig.modelViewer.src);
+                    mv.setAttribute("alt", "3D model preview");
                     mv.setAttribute("camera-controls", "");
                     mv.setAttribute("auto-rotate", "");
+                    mv.setAttribute("loading", "lazy");
                     mv.style.width = "100%";
                     mv.style.height = "260px";
                     mv.style.background = "#0a0d15";
                     mv.style.borderRadius = "8px";
                     modelPreview.appendChild(mv);
-    
-                    // 3. 教學核心：動態產生控制 UI (Web API 互動)
-                    if (runtimeConfig.modelViewer.parts) {
-                        const controlContainer = document.createElement("div");
-                        controlContainer.style.marginTop = "15px";
-                        controlContainer.style.display = "grid";
-                        controlContainer.style.gridTemplateColumns = "1fr 1fr";
-                        controlContainer.style.gap = "10px";
-    
-                        runtimeConfig.modelViewer.parts.forEach(part => {
-                            const wrapper = document.createElement("div");
-                            wrapper.innerHTML = `
-                                <label style="font-size:10px; display:block; margin-bottom:4px;">${part.label}</label>
-                                <input type="color" id="color-${part.materialName}" value="#ffffff" style="width:100%; border:none; background:none; cursor:pointer;">
-                            `;
-                            
-                            // 監聽顏色選擇器
-                            const picker = wrapper.querySelector('input');
-                            picker.addEventListener('input', (event) => {
-                                const color = event.target.value;
-                                // 呼叫 Web API 改變模型顏色
-                                changeModelColor(mv, part.materialName, color);
-                            });
-    
-                            controlContainer.appendChild(wrapper);
-                        });
-                        modelPreview.appendChild(controlContainer);
-                    }
                 }
             }
         }
-    
-        // 改變模型材質顏色的核心函式
-        function changeModelColor(mvElement, materialName, hexColor) {
-            // 確保模型已載入
-            const material = mvElement.model.materials.find(m => m.name === materialName);
-            if (material) {
-                // 將 HEX 顏色轉換為 model-viewer 要求的 RGBA 陣列
-                const rgb = hexToRgb(hexColor);
-                material.pbrMetallicRoughness.setBaseColorFactor([rgb.r/255, rgb.g/255, rgb.b/255, 1]);
-                console.log(`API 呼叫：已將 ${materialName} 更新為 ${hexColor}`);
-            } else {
-                console.warn(`找不到材質名稱：${materialName}，請檢查模型中的 Scene Graph 名稱。`);
-            }
-        }
-    
-        // 輔助工具：Hex 轉 RGB
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? {
-                r: parseInt(result[1], 16),
-                g: parseInt(result[2], 16),
-                b: parseInt(result[3], 16)
-            } : null;
-        }
-    
+
         initForgeUI();
     </script>
 </body>
