@@ -6,7 +6,7 @@
   },
   "modelViewer": {
     "enabled": true,
-    "src": "./assets/glb/kimchi.glb"
+    "src": "./assets/glb/kimchi.glb",
     "parts": [
       { "materialName": "上身", "label": "身體材質 (上身)" },
       { "materialName": "下身", "label": "身體材質 (下身)" },
