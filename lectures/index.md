@@ -1,10 +1,8 @@
 ---
 layout: post
-title: "測試教案"
-permalink: /test-lesson/
+title: "3D 列印常見錯誤與除錯知識庫"
+category: "lectures"
 ---
-# 歡迎來到 Fan³cy Forge
-呢度係 KimChi 導師嘅第一個測試網頁。
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
