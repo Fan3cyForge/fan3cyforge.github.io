@@ -1,0 +1,8 @@
+{
+    "lectures": [
+      { "title": "測試教案", "path": "2026-04-21-test.md" },
+      { "title": "3D 打印參數基礎", "path": "my_lesson.md" }
+    ],
+    "assignments": [],
+    "assets": []
+  }
