@@ -1,7 +1,9 @@
 {
     "lectures": [
-      { "title": "測試教案", "path": "2026-04-21-test.md" },
-      { "title": "3D 打印參數基礎", "path": "my_lesson.md" }
+      { "title": "測試教案", "path": "2026-04-21-test.html" },
+      { "title": "3D 打印參數基礎", "path": "my_lesson.md" },
+      { "title": "3D 列印常見錯誤", "path": "lectures01.html" },
+      { "title": "PLA vs PETG 參數攻略", "path": "lectures02.html" }
     ],
     "assignments": [],
     "assets": []
