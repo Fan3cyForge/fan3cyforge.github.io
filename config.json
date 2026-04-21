@@ -5,7 +5,8 @@
     "evening": "超頻作業模式"
   },
   "modelViewer": {
-    "enabled": false,
-    "src": ""
+    "enabled": true,
+    "src": "./assets/glb/kimchi.glb"
   }
 }
+
