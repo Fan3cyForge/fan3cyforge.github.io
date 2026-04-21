@@ -1,0 +1,11 @@
+{
+  "mentorGreetings": {
+    "morning": "啟動程式",
+    "afternoon": "教學鍛造模式",
+    "evening": "超頻作業模式"
+  },
+  "modelViewer": {
+    "enabled": false,
+    "src": ""
+  }
+}

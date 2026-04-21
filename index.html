@@ -27,6 +27,22 @@
             box-sizing: border-box;
         }
 
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(140, 211, 254, 0.05) 0px,
+                rgba(140, 211, 254, 0.05) 1px,
+                transparent 2px,
+                transparent 4px
+            );
+            mix-blend-mode: screen;
+            z-index: 0;
+        }
+
         .forge-shell {
             max-width: 1100px;
             margin: 0 auto;
@@ -37,6 +53,9 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
             border-radius: 14px;
             padding: 20px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
         }
 
         .command-bar,
@@ -117,6 +136,7 @@
             transform: translateY(-4px);
             border-color: var(--neon-blue);
             box-shadow: 0 0 18px rgba(140, 211, 254, 0.35);
+            text-shadow: 0 0 10px rgba(140, 211, 254, 0.65);
         }
 
         .menu-link small {
@@ -140,24 +160,37 @@
             border-color: #ffd2bf;
         }
 
+        .model-preview {
+            margin-top: 14px;
+            border: 1px solid rgba(140, 211, 254, 0.3);
+            border-radius: 10px;
+            padding: 10px;
+            background: rgba(11, 18, 30, 0.62);
+            display: none;
+        }
+
         .mentor {
             width: 122px;
             position: absolute;
-            bottom: 10px;
+            bottom: 6px;
             opacity: 0.34;
-            filter: grayscale(0.25) drop-shadow(0 0 5px rgba(140, 211, 254, 0.2));
+            filter: drop-shadow(0 0 10px rgba(0, 191, 255, 0.5));
             transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
             animation: float 3.6s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 2;
         }
 
         .mentor.active {
             opacity: 1;
             transform: scale(1.06);
-            filter: drop-shadow(0 0 16px rgba(140, 211, 254, 0.75));
+            filter:
+                drop-shadow(0 0 10px rgba(0, 191, 255, 0.5))
+                drop-shadow(0 0 18px rgba(140, 211, 254, 0.75));
         }
 
-        #kimchi { left: 2px; }
-        #mochi { right: 2px; }
+        #kimchi { left: 8px; }
+        #mochi { right: 8px; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -172,7 +205,9 @@
             }
 
             .mentor {
-                display: none;
+                display: block;
+                width: 88px;
+                opacity: 0.28;
             }
         }
     </style>
@@ -184,8 +219,8 @@
             <div class="bar-item">MENTOR: <span id="mentor-status">KimChi Active🟢</span></div>
         </header>
 
-        <img src="assets/images/kimchi.png" id="kimchi" class="mentor" alt="KimChi">
-        <img src="assets/images/mochi.png" id="mochi" class="mentor" alt="MoChi">
+        <img src="assets/images/kimchi.png" id="kimchi" class="mentor" alt="KimChi" loading="lazy">
+        <img src="assets/images/mochi.png" id="mochi" class="mentor" alt="MoChi" loading="lazy">
 
         <h1 class="forge-title">FAN³CY FORGE_SYSTEM</h1>
         <p class="forge-subtitle">The Forge // Cyber-Industrial Operations Console</p>
@@ -205,7 +240,9 @@
             </a>
         </section>
 
-        <a href="_posts/2026-04-21-test.html" class="aux-link">[TEST] 點擊開啟測試教案</a>
+        <a href="viewer.html" class="aux-link">[TEST] 點擊開啟測試教案</a>
+
+        <section id="model-preview" class="model-preview" aria-label="3D model preview"></section>
 
         <footer class="system-status">
             <div class="bar-item">SYSTEM: <span>F3F v1.3.7</span></div>
@@ -220,6 +257,38 @@
     </div>
 
     <script>
+        const defaultConfig = {
+            mentorGreetings: {
+                morning: "啟動程式",
+                afternoon: "教學鍛造模式",
+                evening: "超頻作業模式"
+            }
+        };
+
+        async function loadRuntimeConfig() {
+            try {
+                const response = await fetch("config.json", { cache: "no-store" });
+                if (!response.ok) {
+                    return defaultConfig;
+                }
+                const remoteConfig = await response.json();
+                return { ...defaultConfig, ...remoteConfig };
+            } catch (error) {
+                return defaultConfig;
+            }
+        }
+
+        function getTimeSlotGreeting(greetings) {
+            const hour = new Date().getHours();
+            if (hour < 12) {
+                return greetings.morning;
+            }
+            if (hour < 18) {
+                return greetings.afternoon;
+            }
+            return greetings.evening;
+        }
+
         function updateSystemTime() {
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, "0");
@@ -243,22 +312,55 @@
             const isKimchi = selectedMentor === "kimchi";
             kimchi.classList.toggle("active", isKimchi);
             mochi.classList.toggle("active", !isKimchi);
-
-            mentorStatus.textContent = isKimchi
-                ? "KimChi Active🟢"
-                : "MoChi Active🟢";
+            const mentorName = isKimchi ? "KimChi" : "MoChi";
+            mentorStatus.textContent = `${mentorName} Active🟢`;
         }
 
-        updateSystemTime();
-        setInterval(updateSystemTime, 1000);
+        async function initForgeUI() {
+            const runtimeConfig = await loadRuntimeConfig();
+            updateSystemTime();
+            setInterval(updateSystemTime, 1000);
 
-        const mentorSwitcher = document.getElementById("mentor-switcher");
-        if (mentorSwitcher) {
-            applyMentorHighlight(mentorSwitcher.value);
-            mentorSwitcher.addEventListener("change", (event) => {
-                applyMentorHighlight(event.target.value);
-            });
+            const mentorSwitcher = document.getElementById("mentor-switcher");
+            if (mentorSwitcher) {
+                applyMentorHighlight(mentorSwitcher.value);
+                mentorSwitcher.addEventListener("change", (event) => {
+                    applyMentorHighlight(event.target.value);
+                });
+            }
+
+            const subtitle = document.querySelector(".forge-subtitle");
+            if (subtitle && runtimeConfig.mentorGreetings) {
+                const greeting = getTimeSlotGreeting(runtimeConfig.mentorGreetings);
+                subtitle.textContent = `The Forge // ${greeting}`;
+            }
+
+            if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled && runtimeConfig.modelViewer.src) {
+                const modelPreview = document.getElementById("model-preview");
+                if (modelPreview) {
+                    const script = document.createElement("script");
+                    script.type = "module";
+                    script.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
+                    document.head.appendChild(script);
+
+                    modelPreview.style.display = "block";
+                    modelPreview.innerHTML = '<div style="margin-bottom:8px;color:#8cd3fe;">3D MODEL PREVIEW</div>';
+                    const mv = document.createElement("model-viewer");
+                    mv.setAttribute("src", runtimeConfig.modelViewer.src);
+                    mv.setAttribute("alt", "3D model preview");
+                    mv.setAttribute("camera-controls", "");
+                    mv.setAttribute("auto-rotate", "");
+                    mv.setAttribute("loading", "lazy");
+                    mv.style.width = "100%";
+                    mv.style.height = "260px";
+                    mv.style.background = "#0a0d15";
+                    mv.style.borderRadius = "8px";
+                    modelPreview.appendChild(mv);
+                }
+            }
         }
+
+        initForgeUI();
     </script>
 </body>
 </html>

@@ -17,8 +17,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Cache Pages build metadata
+        uses: actions/cache@v4
+        with:
+          path: |
+            .jekyll-cache
+            _site
+          key: pages-${{ runner.os }}-${{ hashFiles('**/*.html', '**/*.css', '**/*.js', '**/*.json') }}
+          restore-keys: |
+            pages-${{ runner.os }}-
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Verify deploy path exists
+        run: test -d .
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
