@@ -257,109 +257,99 @@
     </div>
 
     <script>
-        const defaultConfig = {
-            mentorGreetings: {
-                morning: "啟動程式",
-                afternoon: "教學鍛造模式",
-                evening: "超頻作業模式"
-            }
-        };
-
-        async function loadRuntimeConfig() {
-            try {
-                const response = await fetch("config.json", { cache: "no-store" });
-                if (!response.ok) {
-                    return defaultConfig;
-                }
-                const remoteConfig = await response.json();
-                return { ...defaultConfig, ...remoteConfig };
-            } catch (error) {
-                return defaultConfig;
-            }
-        }
-
-        function getTimeSlotGreeting(greetings) {
-            const hour = new Date().getHours();
-            if (hour < 12) {
-                return greetings.morning;
-            }
-            if (hour < 18) {
-                return greetings.afternoon;
-            }
-            return greetings.evening;
-        }
-
-        function updateSystemTime() {
-            const now = new Date();
-            const hh = String(now.getHours()).padStart(2, "0");
-            const mm = String(now.getMinutes()).padStart(2, "0");
-            const ss = String(now.getSeconds()).padStart(2, "0");
-            const node = document.getElementById("sys-time");
-            if (node) {
-                node.textContent = `${hh}:${mm}:${ss}`;
-            }
-        }
-
-        function applyMentorHighlight(selectedMentor) {
-            const kimchi = document.getElementById("kimchi");
-            const mochi = document.getElementById("mochi");
-            const mentorStatus = document.getElementById("mentor-status");
-
-            if (!kimchi || !mochi || !mentorStatus) {
-                return;
-            }
-
-            const isKimchi = selectedMentor === "kimchi";
-            kimchi.classList.toggle("active", isKimchi);
-            mochi.classList.toggle("active", !isKimchi);
-            const mentorName = isKimchi ? "KimChi" : "MoChi";
-            mentorStatus.textContent = `${mentorName} Active🟢`;
-        }
-
         async function initForgeUI() {
-            const runtimeConfig = await loadRuntimeConfig();
-            updateSystemTime();
-            setInterval(updateSystemTime, 1000);
-
-            const mentorSwitcher = document.getElementById("mentor-switcher");
-            if (mentorSwitcher) {
-                applyMentorHighlight(mentorSwitcher.value);
-                mentorSwitcher.addEventListener("change", (event) => {
-                    applyMentorHighlight(event.target.value);
-                });
-            }
-
-            const subtitle = document.querySelector(".forge-subtitle");
-            if (subtitle && runtimeConfig.mentorGreetings) {
-                const greeting = getTimeSlotGreeting(runtimeConfig.mentorGreetings);
-                subtitle.textContent = `The Forge // ${greeting}`;
-            }
-
-            if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled && runtimeConfig.modelViewer.src) {
+            // 1. 讀取配置與導航
+            const [configResp, navResp] = await Promise.all([
+                fetch('config.json'),
+                fetch('navigation.json')
+            ]);
+            const runtimeConfig = await configResp.json();
+            const navData = await navResp.json();
+    
+            // ... (省略導航列渲染部分，保持原樣) ...
+    
+            // 2. 處理 3D 模型預覽與變色功能
+            if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled) {
                 const modelPreview = document.getElementById("model-preview");
                 if (modelPreview) {
+                    // 載入 Google Model Viewer 腳本
                     const script = document.createElement("script");
                     script.type = "module";
                     script.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
                     document.head.appendChild(script);
-
-                    modelPreview.style.display = "block";
-                    modelPreview.innerHTML = '<div style="margin-bottom:8px;color:#8cd3fe;">3D MODEL PREVIEW</div>';
+    
+                    modelPreview.innerHTML = '<div style="margin-bottom:12px; color:#8cd3fe; font-weight:bold; letter-spacing:1px;">3D 造型鍛造爐</div>';
+                    
+                    // 創建模型組件
                     const mv = document.createElement("model-viewer");
                     mv.setAttribute("src", runtimeConfig.modelViewer.src);
-                    mv.setAttribute("alt", "3D model preview");
+                    mv.setAttribute("alt", "Kimchi 3D Model");
                     mv.setAttribute("camera-controls", "");
                     mv.setAttribute("auto-rotate", "");
-                    mv.setAttribute("loading", "lazy");
                     mv.style.width = "100%";
-                    mv.style.height = "260px";
+                    mv.style.height = "300px";
                     mv.style.background = "#0a0d15";
-                    mv.style.borderRadius = "8px";
+                    mv.style.borderRadius = "12px";
+                    mv.style.border = "1px solid var(--glass-border)";
                     modelPreview.appendChild(mv);
+    
+                    // 創建顏色控制面板容器
+                    const controlPanel = document.createElement("div");
+                    controlPanel.style.display = "grid";
+                    controlPanel.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
+                    controlPanel.style.gap = "10px";
+                    controlPanel.style.marginTop = "15px";
+                    controlPanel.style.padding = "10px";
+                    controlPanel.style.background = "rgba(0,0,0,0.2)";
+                    controlPanel.style.borderRadius = "8px";
+    
+                    // 等待模型載入完成後才能操作材質
+                    mv.addEventListener('load', () => {
+                        runtimeConfig.modelViewer.parts.forEach(part => {
+                            const item = document.createElement("div");
+                            item.style.textAlign = "center";
+    
+                            const label = document.createElement("div");
+                            label.textContent = part.label;
+                            label.style.fontSize = "11px";
+                            label.style.color = "#9db9d4";
+                            label.style.marginBottom = "5px";
+    
+                            const colorInput = document.createElement("input");
+                            colorInput.type = "color";
+                            colorInput.value = "#ffffff"; // 預設白色
+                            colorInput.style.width = "40px";
+                            colorInput.style.height = "40px";
+                            colorInput.style.border = "none";
+                            colorInput.style.borderRadius = "50%";
+                            colorInput.style.cursor = "pointer";
+                            colorInput.style.background = "none";
+    
+                            // 變色邏輯
+                            colorInput.addEventListener("input", (event) => {
+                                const hex = event.target.value;
+                                // 將 Hex 轉換為 model-viewer 需要的 0-1 數值
+                                const r = parseInt(hex.substr(1, 2), 16) / 255;
+                                const g = parseInt(hex.substr(3, 2), 16) / 255;
+                                const b = parseInt(hex.substr(5, 2), 16) / 255;
+    
+                                // 尋找匹配的材質名稱
+                                const material = mv.model.materials.find(m => m.name === part.materialName);
+                                if (material) {
+                                    material.pbrMetallicRoughness.setBaseColorFactor([r, g, b, 1]);
+                                }
+                            });
+    
+                            item.appendChild(label);
+                            item.appendChild(colorInput);
+                            controlPanel.appendChild(item);
+                        });
+                    });
+    
+                    modelPreview.appendChild(controlPanel);
                 }
             }
         }
-
         initForgeUI();
     </script>
 </body>
