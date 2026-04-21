@@ -258,17 +258,20 @@
 
     <script>
         async function initForgeUI() {
-            // 1. 讀取配置與導航
-            const [configResp, navResp] = await Promise.all([
-                fetch('config.json'),
-                fetch('navigation.json')
-            ]);
-            const runtimeConfig = await configResp.json();
-            const navData = await navResp.json();
+            const response = await fetch('config.json');
+            const runtimeConfig = await response.json();
     
-            // ... (省略導航列渲染部分，保持原樣) ...
+            // 1. 設定標題
+            const subtitle = document.querySelector(".subtitle");
+            if (subtitle && runtimeConfig.mentorGreetings) {
+                const hour = new Date().getHours();
+                let greeting = runtimeConfig.mentorGreetings.morning;
+                if (hour >= 12 && hour < 18) greeting = runtimeConfig.mentorGreetings.afternoon;
+                if (hour >= 18) greeting = runtimeConfig.mentorGreetings.evening;
+                subtitle.textContent = `The Forge // ${greeting}`;
+            }
     
-            // 2. 處理 3D 模型預覽與變色功能
+            // 2. 處理 3D 模型與控制項
             if (runtimeConfig.modelViewer && runtimeConfig.modelViewer.enabled) {
                 const modelPreview = document.getElementById("model-preview");
                 if (modelPreview) {
@@ -278,78 +281,75 @@
                     script.src = "https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js";
                     document.head.appendChild(script);
     
-                    modelPreview.innerHTML = '<div style="margin-bottom:12px; color:#8cd3fe; font-weight:bold; letter-spacing:1px;">3D 造型鍛造爐</div>';
-                    
-                    // 創建模型組件
+                    modelPreview.style.display = "block";
+                    modelPreview.innerHTML = '<div style="margin-bottom:8px;color:#8cd3fe;font-size:12px;">3D SCENE INTERFACE</div>';
+    
+                    // 建立 3D 檢視器
                     const mv = document.createElement("model-viewer");
                     mv.setAttribute("src", runtimeConfig.modelViewer.src);
-                    mv.setAttribute("alt", "Kimchi 3D Model");
                     mv.setAttribute("camera-controls", "");
                     mv.setAttribute("auto-rotate", "");
                     mv.style.width = "100%";
-                    mv.style.height = "300px";
+                    mv.style.height = "260px";
                     mv.style.background = "#0a0d15";
-                    mv.style.borderRadius = "12px";
-                    mv.style.border = "1px solid var(--glass-border)";
+                    mv.style.borderRadius = "8px";
                     modelPreview.appendChild(mv);
     
-                    // 創建顏色控制面板容器
-                    const controlPanel = document.createElement("div");
-                    controlPanel.style.display = "grid";
-                    controlPanel.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
-                    controlPanel.style.gap = "10px";
-                    controlPanel.style.marginTop = "15px";
-                    controlPanel.style.padding = "10px";
-                    controlPanel.style.background = "rgba(0,0,0,0.2)";
-                    controlPanel.style.borderRadius = "8px";
+                    // 3. 教學核心：動態產生控制 UI (Web API 互動)
+                    if (runtimeConfig.modelViewer.parts) {
+                        const controlContainer = document.createElement("div");
+                        controlContainer.style.marginTop = "15px";
+                        controlContainer.style.display = "grid";
+                        controlContainer.style.gridTemplateColumns = "1fr 1fr";
+                        controlContainer.style.gap = "10px";
     
-                    // 等待模型載入完成後才能操作材質
-                    mv.addEventListener('load', () => {
                         runtimeConfig.modelViewer.parts.forEach(part => {
-                            const item = document.createElement("div");
-                            item.style.textAlign = "center";
-    
-                            const label = document.createElement("div");
-                            label.textContent = part.label;
-                            label.style.fontSize = "11px";
-                            label.style.color = "#9db9d4";
-                            label.style.marginBottom = "5px";
-    
-                            const colorInput = document.createElement("input");
-                            colorInput.type = "color";
-                            colorInput.value = "#ffffff"; // 預設白色
-                            colorInput.style.width = "40px";
-                            colorInput.style.height = "40px";
-                            colorInput.style.border = "none";
-                            colorInput.style.borderRadius = "50%";
-                            colorInput.style.cursor = "pointer";
-                            colorInput.style.background = "none";
-    
-                            // 變色邏輯
-                            colorInput.addEventListener("input", (event) => {
-                                const hex = event.target.value;
-                                // 將 Hex 轉換為 model-viewer 需要的 0-1 數值
-                                const r = parseInt(hex.substr(1, 2), 16) / 255;
-                                const g = parseInt(hex.substr(3, 2), 16) / 255;
-                                const b = parseInt(hex.substr(5, 2), 16) / 255;
-    
-                                // 尋找匹配的材質名稱
-                                const material = mv.model.materials.find(m => m.name === part.materialName);
-                                if (material) {
-                                    material.pbrMetallicRoughness.setBaseColorFactor([r, g, b, 1]);
-                                }
+                            const wrapper = document.createElement("div");
+                            wrapper.innerHTML = `
+                                <label style="font-size:10px; display:block; margin-bottom:4px;">${part.label}</label>
+                                <input type="color" id="color-${part.materialName}" value="#ffffff" style="width:100%; border:none; background:none; cursor:pointer;">
+                            `;
+                            
+                            // 監聽顏色選擇器
+                            const picker = wrapper.querySelector('input');
+                            picker.addEventListener('input', (event) => {
+                                const color = event.target.value;
+                                // 呼叫 Web API 改變模型顏色
+                                changeModelColor(mv, part.materialName, color);
                             });
     
-                            item.appendChild(label);
-                            item.appendChild(colorInput);
-                            controlPanel.appendChild(item);
+                            controlContainer.appendChild(wrapper);
                         });
-                    });
-    
-                    modelPreview.appendChild(controlPanel);
+                        modelPreview.appendChild(controlContainer);
+                    }
                 }
             }
         }
+    
+        // 改變模型材質顏色的核心函式
+        function changeModelColor(mvElement, materialName, hexColor) {
+            // 確保模型已載入
+            const material = mvElement.model.materials.find(m => m.name === materialName);
+            if (material) {
+                // 將 HEX 顏色轉換為 model-viewer 要求的 RGBA 陣列
+                const rgb = hexToRgb(hexColor);
+                material.pbrMetallicRoughness.setBaseColorFactor([rgb.r/255, rgb.g/255, rgb.b/255, 1]);
+                console.log(`API 呼叫：已將 ${materialName} 更新為 ${hexColor}`);
+            } else {
+                console.warn(`找不到材質名稱：${materialName}，請檢查模型中的 Scene Graph 名稱。`);
+            }
+        }
+    
+        // 輔助工具：Hex 轉 RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+    
         initForgeUI();
     </script>
 </body>
