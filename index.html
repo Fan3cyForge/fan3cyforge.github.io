@@ -1,158 +1,51 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fan³cy Forge 學院系統</title>
     <style>
-        :root {
-            --bg-color: #0c0f17;
-            --panel-bg: #151a27;
-            --cyber-blue: #4689cc;
-            --forge-orange: #c27e65;
-            --text-main: #e0e6ed;
-            --text-muted: #8cd3fe;
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .ai-interface {
-            background-color: var(--panel-bg);
-            border: 1px solid rgba(70, 137, 204, 0.3);
-            border-radius: 16px;
-            width: 90%;
-            max-width: 600px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 20px;
-        }
-        .title {
-            color: var(--cyber-blue);
-            font-size: 24px;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 1px;
-        }
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .category-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .category-card {
-            background-color: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-        }
-        .category-card:hover {
-            border-color: var(--forge-orange);
-            background-color: rgba(194, 126, 101, 0.1);
-            transform: translateY(-2px);
-        }
-        .card-icon {
-            font-size: 24px;
-            margin-right: 15px;
-        }
-        .card-content h3 {
-            margin: 0 0 5px 0;
-            font-size: 16px;
-            color: var(--text-main);
-        }
-        .card-content p {
-            margin: 0;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        .assistant-msg {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 20px;
-        }
-        .avatar {
-            width: 40px;
-            height: 40px;
-            background-color: var(--cyber-blue);
-            border-radius: 50%;
-            margin-right: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: #fff;
-            animation: float 3s ease-in-out infinite;
-        }
-        @keyframes float {
+        body { background: #0c0f17; color: #8cd3fe; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .terminal { border: 1px solid #4689cc; padding: 20px; width: 600px; }
+        .menu-item { display: block; padding: 10px; border-bottom: 1px solid #c27e65; text-decoration: none; color: #8cd3fe; }
+        .menu-item:hover { background: #1a2233; }
+        /* 浮動呼吸動畫 */
+        @keyframes breathing-float {
             0% { transform: translateY(0px); }
-            50% { transform: translateY(-5px); }
+            50% { transform: translateY(-15px); }
             100% { transform: translateY(0px); }
         }
-        .msg-bubble {
-            background-color: rgba(70, 137, 204, 0.1);
-            padding: 12px 18px;
-            border-radius: 0 16px 16px 16px;
-            font-size: 14px;
-            line-height: 1.5;
+
+        /* 導師圖片基礎樣式 */
+        .mentor-avatar {
+            width: 150px; /* 根據需求調整大小 */
+            animation: breathing-float 4s ease-in-out infinite;
+            transition: transform 0.3s ease, filter 0.3s ease;
+            cursor: pointer;
+            filter: drop-shadow(0 0 10px rgba(140, 211, 254, 0.3)); /* 科技感光暈 */
+        }
+
+        /* 滑鼠移入效果 (Hover) */
+        .mentor-avatar:hover {
+            transform: scale(1.1) translateY(-5px); /* 放大並稍微升起 */
+            filter: drop-shadow(0 0 20px rgba(140, 211, 254, 0.8)); /* 增加光暈強度 */
         }
     </style>
+    
 </head>
 <body>
-    <div class="ai-interface">
-        <div class="header">
-            <h1 class="title">Fan³cy Forge</h1>
-            <p class="subtitle">AI 自動化教育與數位鍛造中心</p>
-        </div>
-        
-        <div class="assistant-msg">
-            <div class="avatar">AI</div>
-            <div class="msg-bubble">
-                歡迎進入 Fan³cy Forge 系統。KimChi (建模與打印) 與 MoChi (插畫與定色) 隨時為使用者提供支援。請選擇下方資料庫進行存取：
-            </div>
-        </div>
+    <div class="terminal">
+        <h1>FAN³CY FORGE_SYSTEM</h1>
+        <a href="/lectures" class="menu-item">[01] ACCESS LECTURES</a>
+        <a href="/assignments" class="menu-item">[02] ACCESS ASSIGNMENTS</a>
+        <a href="/assets" class="menu-item">[03] ACCESS ASSETS</a>
+    </div>
 
-        <div class="category-grid">
-            <div class="category-card">
-                <div class="card-icon">🐯</div>
-                <div class="card-content">
-                    <h3>Lectures (新手入坑指南)</h3>
-                    <p>由 KimChi 管理的建模教學與基礎理論庫</p>
-                </div>
-            </div>
-            <div class="category-card">
-                <div class="card-icon">⚙️</div>
-                <div class="card-content">
-                    <h3>Assignments (鍛造任務)</h3>
-                    <p>實作練習與 3D 打印參數優化作業</p>
-                </div>
-            </div>
-            <div class="category-card">
-                <div class="card-icon">🐹</div>
-                <div class="card-content">
-                    <h3>Assets (物資庫)</h3>
-                    <p>由 MoChi 管理的模型檔案與色板資源</p>
-                </div>
-            </div>
-        </div>
+    <div class="menu-module">
+        <img src="assets/images/kimchi_standing.png" class="mentor-avatar" alt="KimChi">
+        <a href="/lectures" class="menu-item">[01] ACCESS LECTURES</a>
+    </div>
+    
+    <div class="menu-module">
+        <img src="assets/images/mochi_standing.png" class="mentor-avatar" alt="MoChi">
+        <a href="/assets" class="menu-item">[03] ACCESS ASSETS</a>
     </div>
 </body>
 </html>
