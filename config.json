@@ -7,15 +7,6 @@
   "modelViewer": {
     "enabled": true,
     "src": "./assets/glb/kimchi.glb"
-    "parts": [
-      { "materialName": "上身", "label": "身體材質 (上身)" },
-      { "materialName": "下身", "label": "身體材質 (下身)" },
-      { "materialName": "尾巴", "label": "身體材質 (尾巴)" },
-      { "materialName": "頭部", "label": "頭部材質 (頭部)" },
-      { "materialName": "左手", "label": "左腳材質 (左手)" },
-      { "materialName": "右手", "label": "右腳材質 (右手)" },
-      { "materialName": "右腳", "label": "右腳材質 (右腳)" },  
-      { "materialName": "左腳", "label": "右腳材質 (左腳)" }
-    ]
+
   }
 }
