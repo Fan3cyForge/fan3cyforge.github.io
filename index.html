@@ -1,51 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan³cy Forge | Terminal</title>
     <style>
-        body { background: #0c0f17; color: #8cd3fe; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .terminal { border: 1px solid #4689cc; padding: 20px; width: 600px; }
-        .menu-item { display: block; padding: 10px; border-bottom: 1px solid #c27e65; text-decoration: none; color: #8cd3fe; }
-        .menu-item:hover { background: #1a2233; }
-        /* 浮動呼吸動畫 */
-        @keyframes breathing-float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
+        /* 強制背景顏色 */
+        body { 
+            background-color: #0c0f17 !important; 
+            color: #8cd3fe; 
+            font-family: 'Courier New', monospace; 
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        /* 導師圖片基礎樣式 */
-        .mentor-avatar {
-            width: 150px; /* 根據需求調整大小 */
-            animation: breathing-float 4s ease-in-out infinite;
-            transition: transform 0.3s ease, filter 0.3s ease;
-            cursor: pointer;
-            filter: drop-shadow(0 0 10px rgba(140, 211, 254, 0.3)); /* 科技感光暈 */
+        .terminal-box {
+            border: 2px solid #4689cc;
+            padding: 40px;
+            background: rgba(20, 26, 38, 0.8);
+            box-shadow: 0 0 20px rgba(70, 137, 204, 0.5);
+            text-align: center;
+            position: relative;
+            z-index: 2;
         }
 
-        /* 滑鼠移入效果 (Hover) */
-        .mentor-avatar:hover {
-            transform: scale(1.1) translateY(-5px); /* 放大並稍微升起 */
-            filter: drop-shadow(0 0 20px rgba(140, 211, 254, 0.8)); /* 增加光暈強度 */
+        /* 導師圖片樣式 */
+        .mentor {
+            width: 120px; 
+            position: absolute;
+            bottom: -60px;
+            animation: float 3s ease-in-out infinite;
         }
+        #kimchi { left: -50px; }
+        #mochi { right: -50px; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .menu-link {
+            display: block;
+            margin: 15px 0;
+            color: #c27e65;
+            text-decoration: none;
+            font-size: 1.2rem;
+        }
+        .menu-link:hover { color: #fff; text-shadow: 0 0 10px #fff; }
     </style>
-    
 </head>
 <body>
-    <div class="terminal">
+    <div class="terminal-box">
+        <img src="assets/images/kimchi.png" id="kimchi" class="mentor" alt="KimChi">
+        <img src="assets/images/mochi.png" id="mochi" class="mentor" alt="MoChi">
+        
         <h1>FAN³CY FORGE_SYSTEM</h1>
-        <a href="/lectures" class="menu-item">[01] ACCESS LECTURES</a>
-        <a href="/assignments" class="menu-item">[02] ACCESS ASSIGNMENTS</a>
-        <a href="/assets" class="menu-item">[03] ACCESS ASSETS</a>
-    </div>
-
-    <div class="menu-module">
-        <img src="assets/images/kimchi_standing.png" class="mentor-avatar" alt="KimChi">
-        <a href="/lectures" class="menu-item">[01] ACCESS LECTURES</a>
-    </div>
-    
-    <div class="menu-module">
-        <img src="assets/images/mochi_standing.png" class="mentor-avatar" alt="MoChi">
-        <a href="/assets" class="menu-item">[03] ACCESS ASSETS</a>
+        <hr border="1" color="#4689cc">
+        <a href="lectures/" class="menu-link">[01] 進入講義庫</a>
+        <a href="assignments/" class="menu-link">[02] 提交鍛造任務</a>
+        <a href="assets/" class="menu-link">[03] 提取物資資產</a>
     </div>
 </body>
 </html>
