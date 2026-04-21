@@ -5,65 +5,262 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fan³cy Forge | Terminal</title>
     <style>
-        /* 強制背景顏色 */
-        body { 
-            background-color: #0c0f17 !important; 
-            color: #8cd3fe; 
-            font-family: 'Courier New', monospace; 
+        :root {
+            --bg: #0c0f17;
+            --neon-blue: #8cd3fe;
+            --industrial-orange: #c27e65;
+            --glass-bg: rgba(20, 26, 38, 0.65);
+            --glass-border: rgba(140, 211, 254, 0.35);
+            --soft-text: #9db9d4;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 18% 20%, rgba(140, 211, 254, 0.15), transparent 35%),
+                radial-gradient(circle at 78% 75%, rgba(194, 126, 101, 0.14), transparent 34%),
+                linear-gradient(120deg, #0a0d15 0%, var(--bg) 60%, #0a0d15 100%);
+            color: var(--neon-blue);
+            font-family: "JetBrains Mono", "Menlo", "Consolas", monospace;
             margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            padding: 28px;
+            box-sizing: border-box;
         }
 
-        .terminal-box {
-            border: 2px solid #4689cc;
-            padding: 40px;
-            background: rgba(20, 26, 38, 0.8);
-            box-shadow: 0 0 20px rgba(70, 137, 204, 0.5);
-            text-align: center;
+        .forge-shell {
+            max-width: 1100px;
+            margin: 0 auto;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+            border-radius: 14px;
+            padding: 20px;
+        }
+
+        .command-bar,
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            border: 1px solid rgba(140, 211, 254, 0.25);
+            background: rgba(12, 15, 23, 0.68);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.92rem;
+        }
+
+        .system-status {
+            grid-template-columns: 1.2fr 1fr 1fr;
+            margin-top: 14px;
+        }
+
+        .bar-item {
+            border: 1px solid rgba(140, 211, 254, 0.18);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: var(--soft-text);
+        }
+
+        .bar-item span {
+            color: var(--neon-blue);
+        }
+
+        .bar-item strong {
+            color: var(--industrial-orange);
+            font-weight: 700;
+        }
+
+        .forge-title {
+            margin: 24px 0 6px;
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            letter-spacing: 0.04em;
+        }
+
+        .forge-subtitle {
+            margin: 0 0 22px;
+            color: var(--soft-text);
+            font-size: 0.95rem;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(180px, 1fr));
+            gap: 14px;
+        }
+
+        .menu-link {
+            border: 1px solid rgba(140, 211, 254, 0.35);
+            border-radius: 10px;
+            background: rgba(11, 18, 30, 0.74);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: var(--neon-blue);
+            padding: 16px;
+            text-decoration: none;
             position: relative;
-            z-index: 2;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
-        /* 導師圖片樣式 */
-        .mentor {
-            width: 120px; 
-            position: absolute;
-            bottom: -60px;
-            animation: float 3s ease-in-out infinite;
+        .menu-link::before {
+            content: attr(data-code);
+            display: block;
+            color: var(--industrial-orange);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
         }
-        #kimchi { left: -50px; }
-        #mochi { right: -50px; }
+
+        .menu-link:hover {
+            transform: translateY(-4px);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 18px rgba(140, 211, 254, 0.35);
+        }
+
+        .menu-link small {
+            display: block;
+            margin-top: 8px;
+            color: var(--soft-text);
+            font-size: 0.82rem;
+        }
+
+        .aux-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: var(--industrial-orange);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(194, 126, 101, 0.6);
+            padding-bottom: 2px;
+        }
+
+        .aux-link:hover {
+            color: #ffd2bf;
+            border-color: #ffd2bf;
+        }
+
+        .mentor {
+            width: 94px;
+            position: absolute;
+            bottom: 14px;
+            opacity: 0.34;
+            filter: grayscale(0.25) drop-shadow(0 0 5px rgba(140, 211, 254, 0.2));
+            transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+            animation: float 3.6s ease-in-out infinite;
+        }
+
+        .mentor.active {
+            opacity: 1;
+            transform: scale(1.06);
+            filter: drop-shadow(0 0 16px rgba(140, 211, 254, 0.75));
+        }
+
+        #kimchi { left: 20px; }
+        #mochi { right: 20px; }
 
         @keyframes float {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
 
-        .menu-link {
-            display: block;
-            margin: 15px 0;
-            color: #c27e65;
-            text-decoration: none;
-            font-size: 1.2rem;
+        @media (max-width: 860px) {
+            .command-bar,
+            .system-status,
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .mentor {
+                display: none;
+            }
         }
-        .menu-link:hover { color: #fff; text-shadow: 0 0 10px #fff; }
     </style>
 </head>
 <body>
-    <div class="terminal-box">
+    <div class="forge-shell">
+        <header class="command-bar">
+            <div class="bar-item">SYS.TIME: <span id="sys-time">--:--:--</span></div>
+            <div class="bar-item">BRANCH: <strong>Main Branch</strong></div>
+            <div class="bar-item">MENTOR: <span id="mentor-status">Online / KimChi Active</span></div>
+        </header>
+
         <img src="assets/images/kimchi.png" id="kimchi" class="mentor" alt="KimChi">
         <img src="assets/images/mochi.png" id="mochi" class="mentor" alt="MoChi">
-        
-        <h1>FAN³CY FORGE_SYSTEM</h1>
-        <hr border="1" color="#4689cc">
-        <a href="lectures/" class="menu-link">[01] 進入講義庫</a>
-        <a href="assignments/" class="menu-link">[02] 提交鍛造任務</a>
-        <a href="assets/" class="menu-link">[03] 提取物資資產</a>
-        <a href="test-lesson/" class="menu-link">[TEST] 點擊開啟測試教案</a>
+
+        <h1 class="forge-title">FAN³CY FORGE_SYSTEM</h1>
+        <p class="forge-subtitle">The Forge // Cyber-Industrial Operations Console</p>
+
+        <section class="content-grid" aria-label="The Forge Entry Points">
+            <a href="lectures/index.html" class="menu-link" data-code="[01] LECTURES">
+                進入講義庫
+                <small>Access tactical learning modules</small>
+            </a>
+            <a href="assignments/" class="menu-link" data-code="[02] ASSIGNMENTS">
+                提交鍛造任務
+                <small>Upload and verify mission outputs</small>
+            </a>
+            <a href="assets/" class="menu-link" data-code="[03] ASSETS">
+                提取物資資產
+                <small>Retrieve files, kits, and artifacts</small>
+            </a>
+        </section>
+
+        <a href="_posts/2026-04-21-test.html" class="aux-link">[TEST] 點擊開啟測試教案</a>
+
+        <footer class="system-status">
+            <div class="bar-item">SYSTEM: <span>Fan³cy Forge v1.3.7</span></div>
+            <div class="bar-item">MODE: <strong>Operational</strong></div>
+            <div class="bar-item">
+                MENTOR SWITCH:
+                <select id="mentor-switcher" aria-label="Mentor Switcher" style="margin-left:8px; background:#111827; color:#8cd3fe; border:1px solid rgba(140, 211, 254, 0.35); border-radius:6px; padding:4px 6px; font-family:inherit;">
+                    <option value="kimchi">KimChi</option>
+                    <option value="mochi">MoChi</option>
+                </select>
+            </div>
+        </footer>
     </div>
+
+    <script>
+        function updateSystemTime() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, "0");
+            const mm = String(now.getMinutes()).padStart(2, "0");
+            const ss = String(now.getSeconds()).padStart(2, "0");
+            const node = document.getElementById("sys-time");
+            if (node) {
+                node.textContent = `${hh}:${mm}:${ss}`;
+            }
+        }
+
+        function applyMentorHighlight(selectedMentor) {
+            const kimchi = document.getElementById("kimchi");
+            const mochi = document.getElementById("mochi");
+            const mentorStatus = document.getElementById("mentor-status");
+
+            if (!kimchi || !mochi || !mentorStatus) {
+                return;
+            }
+
+            const isKimchi = selectedMentor === "kimchi";
+            kimchi.classList.toggle("active", isKimchi);
+            mochi.classList.toggle("active", !isKimchi);
+
+            mentorStatus.textContent = isKimchi
+                ? "Online / KimChi Active"
+                : "Online / MoChi Active";
+        }
+
+        updateSystemTime();
+        setInterval(updateSystemTime, 1000);
+
+        const mentorSwitcher = document.getElementById("mentor-switcher");
+        if (mentorSwitcher) {
+            applyMentorHighlight(mentorSwitcher.value);
+            mentorSwitcher.addEventListener("change", (event) => {
+                applyMentorHighlight(event.target.value);
+            });
+        }
+    </script>
 </body>
 </html>
