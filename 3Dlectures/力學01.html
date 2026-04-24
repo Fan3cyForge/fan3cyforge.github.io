@@ -1,0 +1,537 @@
+!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學：功能性零件設計指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* CSS resets and base styles */
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #fafaf9; color: #292524; }
+        
+        /* Custom scrollbar for better UI */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f5f5f4; }
+        ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+
+        /* Chart Container Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+
+        /* Custom Interactive Elements CSS (No SVG) */
+        .physics-block {
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: bottom center;
+        }
+        .falling-left { transform: rotate(-75deg); }
+        .falling-right { transform: rotate(75deg); }
+        
+        .joint-part { transition: all 0.3s ease; }
+        
+        .layer-line { height: 2px; background-color: rgba(0,0,0,0.1); margin-bottom: 4px; width: 100%; }
+        .layer-block { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; }
+
+        /* Tab active state */
+        .tab-btn.active { background-color: #d97706; color: white; border-color: #d97706; }
+        .tab-content { display: none; animation: fadeIn 0.5s ease-in-out; }
+        .tab-content.active { display: block; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Chosen Palette: Warm Neutrals (Stone) with Amber accents for highlights and interactions. -->
+    
+    <!-- Application Structure Plan: 
+         Structure: Single-page application with a tabbed interface. 
+         Reasoning: The report covers four distinct physics concepts (CoG, Torque, Joints, Shear Stress). A tabbed navigation allows users to focus on one concept at a time without overwhelming them with a massive scroll. The initial view acts as an executive summary setting the context.
+         User Flow: Intro -> Select Concept Tab -> Read Context -> Interact with concept visual/chart -> Read Takeaway -> Move to next tab. 
+    -->
+
+    <!-- Visualization & Content Choices: 
+         1. Intro: Doughnut Chart (Chart.js) -> Shows impact of physics ignorance (print failures). Justification: Sets the stage using quantitative estimation.
+         2. CoG: HTML/CSS Interactive Slider -> Manipulates CoG position. Justification: Best shows "tipping point" physically without complex WebGL.
+         3. Torque/Overhangs: Line Chart (Chart.js) -> Torque vs Length. Justification: Shows the non-linear relationship of physical forces clearly.
+         4. Joints: HTML/CSS Visual Slider -> Adjusts tolerance gap. Justification: Visually demonstrates the physical concept of friction fit vs loose fit.
+         5. Shear Stress: Bar Chart (Chart.js) + HTML/CSS visual -> Compares orientation strength. Justification: Clearly contrasts the anisotropic nature of FDM printing.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
+        
+        <!-- Header -->
+        <header class="mb-10 text-center md:text-left border-b border-stone-200 pb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-stone-900 mb-3 tracking-tight">3D打印工程物理學：從模型到實用零件</h1>
+            <p class="text-lg text-stone-600 max-w-3xl">將物理學原理（重心、力矩、公差、剪應力）應用於3D打印設計中，能有效提升列印成功率、減少支撐耗材，並製作出具備真正結構強度的功能性零件。</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex flex-wrap gap-2 mb-8" id="nav-tabs">
+            <button class="tab-btn active px-4 py-2 rounded-md border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors" data-target="intro">報告摘要</button>
+            <button class="tab-btn px-4 py-2 rounded-md border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors" data-target="cog">重心與穩定性</button>
+            <button class="tab-btn px-4 py-2 rounded-md border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors" data-target="torque">懸掛與高力矩</button>
+            <button class="tab-btn px-4 py-2 rounded-md border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors" data-target="joints">榫頭與公差</button>
+            <button class="tab-btn px-4 py-2 rounded-md border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-100 transition-colors" data-target="shear">層間剪應力</button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="bg-white rounded-xl shadow-sm border border-stone-200 p-6 md:p-8">
+
+            <!-- Section: Introduction -->
+            <section id="intro" class="tab-content active">
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold text-stone-800 mb-4">為何物理知識對3D打印研究至關重要？</h2>
+                        <p class="text-stone-600 mb-4 leading-relaxed">
+                            許多初學者將3D打印視為純粹的「形狀複製」，忽略了打印過程及最終成品在現實世界中受到的物理定律約束。缺乏物理考量的設計往往導致列印失敗、材料浪費，或成品一受力即斷裂。
+                        </p>
+                        <ul class="space-y-3 mb-6">
+                            <li class="flex items-start">
+                                <span class="text-amber-600 mr-2 font-bold">✓</span>
+                                <span class="text-stone-700"><strong>減少失敗率：</strong> 考量重心與力矩，避免列印中途模型傾倒。</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-amber-600 mr-2 font-bold">✓</span>
+                                <span class="text-stone-700"><strong>優化無支撐列印：</strong> 利用幾何與物理關係，挑戰極限懸垂角度。</span>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="text-amber-600 mr-2 font-bold">✓</span>
+                                <span class="text-stone-700"><strong>創造實用部件：</strong> 透過理解剪應力與層間結合，設計出能承受真實負載的機械零件。</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-stone-50 p-4 rounded-lg border border-stone-100">
+                        <h3 class="text-center text-sm font-bold text-stone-500 uppercase tracking-wider mb-2">常見結構性列印失敗主因分佈 (估算數據)</h3>
+                        <div class="chart-container">
+                            <canvas id="failureChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Center of Gravity -->
+            <section id="cog" class="tab-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-2">重心 (Center of Gravity) 與列印穩定性</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        在本節中，我們探討重心位置如何影響列印過程。重心是物體所有質量的平均分佈點。在3D打印中，如果模型在生長過程中的重心垂直投影超出了與熱床接觸的底部面積（Base Area），模型就會因為重力產生的翻轉力矩而脫落失敗。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 bg-stone-50 p-6 rounded-lg border border-stone-200">
+                    <div class="flex flex-col justify-center items-center">
+                        <!-- HTML/CSS Interactive Visualization -->
+                        <div class="relative w-full max-w-[200px] h-48 border-b-4 border-stone-800 flex justify-center items-end mb-6">
+                            <div id="cog-model" class="physics-block w-32 h-40 bg-stone-400 border-2 border-stone-500 rounded-t-sm relative">
+                                <!-- Base indicator -->
+                                <div class="absolute -bottom-1 left-0 w-full h-1 bg-amber-500 z-10"></div>
+                                <!-- Center of Gravity Dot -->
+                                <div id="cog-dot" class="absolute w-5 h-5 bg-red-600 rounded-full border-2 border-white shadow-sm transform -translate-x-1/2 -translate-y-1/2" style="left: 50%; top: 50%;"></div>
+                                <!-- Plumb line -->
+                                <div id="plumb-line" class="absolute w-px bg-red-400 border-dashed border-l" style="left: 50%; top: 50%; height: 200px; z-index: -1;"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full max-w-xs text-center">
+                            <label for="cog-slider" class="block text-sm font-medium text-stone-700 mb-2">移動頂部質量改變重心 (X軸): <span id="cog-value" class="text-amber-600 font-bold">置中</span></label>
+                            <input type="range" id="cog-slider" min="0" max="100" value="50" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col justify-center">
+                        <h3 class="text-lg font-bold text-stone-800 mb-3">研究應用價值：</h3>
+                        <p class="text-stone-600 mb-4 text-sm leading-relaxed">
+                            設計高瘦模型或非對稱懸臂結構時，工程師必須計算整個模型的重心。如果發現重心偏移過大，可以透過以下方式修正：
+                        </p>
+                        <div class="space-y-4">
+                            <div class="bg-white p-3 rounded border border-stone-200 shadow-sm">
+                                <h4 class="font-bold text-stone-800 text-sm">1. 增加底座接觸面 (Brim/Raft)</h4>
+                                <p class="text-xs text-stone-500 mt-1">擴大底部面積，提高抗翻轉能力。</p>
+                            </div>
+                            <div class="bg-white p-3 rounded border border-stone-200 shadow-sm">
+                                <h4 class="font-bold text-stone-800 text-sm">2. 調整內部填充 (Infill Density)</h4>
+                                <p class="text-xs text-stone-500 mt-1">底部使用高密度填充，頂部使用低密度，人為降低重心高度。</p>
+                            </div>
+                            <div id="cog-alert" class="mt-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm font-medium transition-colors">
+                                狀態：重心在底座範圍內，列印穩定。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Overhangs & Torque -->
+            <section id="torque" class="tab-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-2">高力矩嘅懸掛零件 (Overhangs & Bending Moments)</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        此區塊分析水平懸掛結構。當零件向外延伸而沒有底部支撐時（懸臂樑），重力會在其根部產生彎曲力矩 (Bending Moment)。延伸越長，力矩呈線性甚至幾何級數放大，導致列印過程中下垂變形，甚至扯裂層間結合。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-stone-800 mb-3">懸臂長度與根部受力關係</h3>
+                        <p class="text-sm text-stone-600 mb-4">
+                            力矩 (Torque) = 力 (Force, 質量x重力) × 力臂 (Distance)。隨著懸掛部分變長，不僅力臂增加，懸掛部分的總質量也增加，導致根部承受極大壓力。
+                        </p>
+                        <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-4">
+                            <p class="text-sm text-amber-800 font-medium">設計對策：</p>
+                            <ul class="text-xs text-amber-700 list-disc list-inside mt-2 space-y-1">
+                                <li><strong>45度法則：</strong> 將懸掛角度設計大於45度，讓新一層能部分疊加在舊一層上。</li>
+                                <li><strong>加入倒角/加強肋 (Chamfer/Ribs)：</strong> 在懸臂下方增加三角形支撐結構，分散根部應力。</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="bg-stone-50 p-4 rounded-lg border border-stone-100">
+                        <div class="chart-container">
+                            <canvas id="torqueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Joints -->
+            <section id="joints" class="tab-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-2">榫頭 (Mortise & Tenon) 與 列印公差</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        為了突破列印機尺寸限制或結合不同材料，常需設計拼接零件。榫頭連接依賴材料間的物理摩擦力與幾何互鎖。由於3D打印的熱脹冷縮與擠出線寬誤差，精準掌控「公差 (Tolerance)」是組裝成功的關鍵。
+                    </p>
+                </div>
+
+                <div class="bg-stone-50 p-6 rounded-lg border border-stone-200">
+                    <div class="flex flex-col md:flex-row gap-8 items-center justify-center">
+                        
+                        <!-- Tolerance Interactive Visual -->
+                        <div class="w-full md:w-1/2 flex flex-col items-center">
+                            <div class="relative w-48 h-48 bg-white border border-stone-300 flex justify-center items-center overflow-hidden mb-6 rounded-md">
+                                <!-- Mortise (Hole) -->
+                                <div class="absolute w-32 h-32 border-4 border-stone-800 rounded-sm"></div>
+                                <!-- Tenon (Peg) -->
+                                <div id="tenon-peg" class="joint-part absolute w-32 h-32 bg-amber-500 opacity-80 rounded-sm border-2 border-amber-700 shadow-inner"></div>
+                            </div>
+                            
+                            <div class="w-full max-w-xs text-center">
+                                <label for="tolerance-slider" class="block text-sm font-medium text-stone-700 mb-2">設定間隙公差 (Tolerance): <span id="tol-value" class="text-amber-600 font-bold">0.0 mm</span></label>
+                                <input type="range" id="tolerance-slider" min="0" max="100" value="0" class="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-amber-600">
+                                <div class="flex justify-between text-xs text-stone-500 mt-1">
+                                    <span>過盈/卡死</span>
+                                    <span>最佳</span>
+                                    <span>過渡/鬆動</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-1/2">
+                            <div id="tol-feedback-box" class="p-5 rounded-lg border-2 border-red-400 bg-red-50 transition-colors duration-300">
+                                <h3 id="tol-title" class="text-lg font-bold text-red-800 mb-2">過盈配合 (Interference Fit)</h3>
+                                <p id="tol-desc" class="text-sm text-red-700">
+                                    間隙為 0 或負數。因為耗材擠出膨脹（大象腿效應或線寬誤差），零件會比設計圖稍大。此設定下榫頭無法插入榫眼，強行組裝會導致零件破裂。
+                                </p>
+                            </div>
+                            <div class="mt-4 text-sm text-stone-600">
+                                <strong>研究心得：</strong> 一般FDM列印機建議預留 <strong>0.15mm 至 0.3mm</strong> 的間隙公差，具體數值需根據機器精度和材料收縮率（如ABS收縮率高於PLA）進行校準測試。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Shear Stress -->
+            <section id="shear" class="tab-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-stone-800 mb-2">層間剪應力 (Shear Stress) 與列印方向</h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        FDM 3D打印是一層層堆疊而成的（各向異性材料）。理解層與層之間的物理結合力至關重要。Z軸（層與層之間）的結合力遠弱於X/Y軸（連續的塑料線材）。當零件受到平行於層紋的力（剪應力）或垂直拉扯層紋的力（拉伸應力）時，最容易發生斷裂。
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div class="bg-stone-50 p-4 rounded-lg border border-stone-100">
+                        <h3 class="text-center text-sm font-bold text-stone-500 uppercase tracking-wider mb-2">列印方向對抗拉強度的影響</h3>
+                        <div class="chart-container">
+                            <canvas id="shearChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold text-stone-800 mb-4">結構設計的黃金法則</h3>
+                        
+                        <!-- Visualizing Z-axis weakness -->
+                        <div class="flex justify-around mb-6 text-center">
+                            <div>
+                                <div class="layer-block w-20 h-24 bg-stone-200 border-2 border-stone-400 mx-auto mb-2 relative">
+                                    <!-- Layers -->
+                                    <div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div><div class="layer-line"></div>
+                                    <!-- Force arrows -->
+                                    <div class="absolute -left-4 top-1/2 text-red-500 font-bold text-xl">←</div>
+                                    <div class="absolute -right-4 top-1/2 text-red-500 font-bold text-xl">→</div>
+                                    <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-red-500/20">
+                                        <span class="text-red-700 font-bold text-xs transform -rotate-12">易從層間裂開</span>
+                                    </div>
+                                </div>
+                                <span class="text-xs font-bold text-stone-600">垂直列印 (受剪切/拉伸力)</span>
+                            </div>
+                            
+                            <div>
+                                <div class="layer-block w-24 h-12 bg-stone-200 border-2 border-stone-400 mx-auto mt-6 mb-2 relative flex-row justify-start">
+                                    <!-- Vertical Layers -->
+                                    <div class="h-full w-px bg-black/10 mx-1"></div><div class="h-full w-px bg-black/10 mx-1"></div><div class="h-full w-px bg-black/10 mx-1"></div><div class="h-full w-px bg-black/10 mx-1"></div><div class="h-full w-px bg-black/10 mx-1"></div>
+                                     <!-- Force arrows -->
+                                     <div class="absolute -left-4 top-1/4 text-green-600 font-bold text-xl">←</div>
+                                     <div class="absolute -right-4 top-1/4 text-green-600 font-bold text-xl">→</div>
+                                </div>
+                                <span class="text-xs font-bold text-stone-600">水平列印 (受相同方向力)</span>
+                            </div>
+                        </div>
+
+                        <p class="text-sm text-stone-600 mb-3">
+                            <strong>物理應用：</strong> 在設計會承受高負載的結構件（如掛鉤、卡扣、機器懸臂）時，必須分析它在實際使用中主要承受力的方向。
+                        </p>
+                        <p class="text-sm text-stone-600">
+                            透過在切片軟體中旋轉模型，<strong>確保施力方向平行於連續擠出的線條路徑，並垂直於層積方向（Z軸）</strong>。將受力轉化為對塑料線條本身的壓縮力或拉伸力，而不是試圖撕裂層與層之間的黏合處（剪應力）。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. Tab Navigation Logic ---
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Remove active class from all
+                    tabBtns.forEach(b => b.classList.remove('active', 'bg-amber-600', 'text-white'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked button
+                    btn.classList.add('active');
+                    
+                    // Show target content
+                    const targetId = btn.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+                });
+            });
+
+            // --- 2. Intro Section: Chart.js Doughnut ---
+            const ctxFailure = document.getElementById('failureChart').getContext('2d');
+            new Chart(ctxFailure, {
+                type: 'doughnut',
+                data: {
+                    labels: ['忽略懸垂/支撐失敗', '重心不穩/脫床', '層間剪切斷裂', '公差不合/無法組裝', '其他原因'],
+                    datasets: [{
+                        data: [35, 25, 20, 15, 5],
+                        backgroundColor: ['#d97706', '#f59e0b', '#fbbf24', '#fcd34d', '#e7e5e4'],
+                        borderWidth: 1,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: { callbacks: { label: (context) => ` ${context.label}: ${context.parsed}%` } }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // --- 3. CoG Interactive Logic ---
+            const cogSlider = document.getElementById('cog-slider');
+            const cogDot = document.getElementById('cog-dot');
+            const cogModel = document.getElementById('cog-model');
+            const plumbLine = document.getElementById('plumb-line');
+            const cogValueText = document.getElementById('cog-value');
+            const cogAlert = document.getElementById('cog-alert');
+
+            cogSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                // Map slider 0-100 to dot position roughly 20% to 80% visually
+                const posPercent = 20 + (val * 0.6); 
+                
+                cogDot.style.left = `${posPercent}%`;
+                plumbLine.style.left = `${posPercent}%`;
+
+                // Logic to check stability (base is roughly 10% to 90% of the block visually)
+                cogModel.classList.remove('falling-left', 'falling-right');
+                
+                if (val < 20) {
+                    cogModel.classList.add('falling-left');
+                    cogValueText.textContent = '極度偏左';
+                    cogAlert.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded border border-red-200 text-sm font-medium transition-colors';
+                    cogAlert.innerHTML = '⚠ 警告：重心偏移超出底座，模型將在列印中途翻覆！';
+                } else if (val > 80) {
+                    cogModel.classList.add('falling-right');
+                    cogValueText.textContent = '極度偏右';
+                    cogAlert.className = 'mt-4 p-3 bg-red-100 text-red-800 rounded border border-red-200 text-sm font-medium transition-colors';
+                    cogAlert.innerHTML = '⚠ 警告：重心偏移超出底座，模型將在列印中途翻覆！';
+                } else {
+                    cogValueText.textContent = val === 50 ? '置中' : (val < 50 ? '偏左' : '偏右');
+                    cogAlert.className = 'mt-4 p-3 bg-green-100 text-green-800 rounded border border-green-200 text-sm font-medium transition-colors';
+                    cogAlert.innerHTML = '狀態：重心在底座支撐範圍內，列印穩定。';
+                }
+            });
+
+            // --- 4. Torque Overhang Section: Chart.js Line ---
+            const ctxTorque = document.getElementById('torqueChart').getContext('2d');
+            const lengths = [0, 10, 20, 30, 40, 50, 60]; // mm
+            // Synthetic data demonstrating Torque = Force * Distance. Force also increases with volume(length).
+            // So Torque roughly relates to Length^2 for a uniform beam.
+            const torqueData = lengths.map(l => l * l * 0.05); 
+
+            new Chart(ctxTorque, {
+                type: 'line',
+                data: {
+                    labels: lengths.map(l => l + 'mm'),
+                    datasets: [{
+                        label: '根部承受彎曲力矩 (相對單位)',
+                        data: torqueData,
+                        borderColor: '#d97706',
+                        backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#b45309',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: '力矩大小 (Torque)', font: {size: 11} },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        x: { 
+                            title: { display: true, text: '懸掛長度 (Length)', font: {size: 11} },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    }
+                }
+            });
+
+            // --- 5. Joints Tolerance Interactive Logic ---
+            const tolSlider = document.getElementById('tolerance-slider');
+            const tenonPeg = document.getElementById('tenon-peg');
+            const tolValueText = document.getElementById('tol-value');
+            const tolBox = document.getElementById('tol-feedback-box');
+            const tolTitle = document.getElementById('tol-title');
+            const tolDesc = document.getElementById('tol-desc');
+
+            tolSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                
+                // Base size is 32 (8rem). Scale down based on slider.
+                // 0 slider = 100% size (tight). 100 slider = 80% size (loose).
+                const scale = 1 - (val * 0.002);
+                tenonPeg.style.transform = `scale(${scale})`;
+                
+                // Map slider to physical tolerance mm (synthetic mapping for UI)
+                const mmGap = (val * 0.006).toFixed(2);
+                tolValueText.textContent = `${mmGap} mm`;
+
+                if (val < 25) { // 0 - 0.15mm
+                    tolBox.className = 'p-5 rounded-lg border-2 border-red-400 bg-red-50 transition-colors duration-300';
+                    tolTitle.className = 'text-lg font-bold text-red-800 mb-2';
+                    tolDesc.className = 'text-sm text-red-700';
+                    tolTitle.textContent = '過盈配合 / 摩擦死鎖';
+                    tolDesc.textContent = '間隙過小。因材料擠出膨脹，零件會卡死無法完全插入，強行敲擊極易導致層間劈裂。';
+                } else if (val >= 25 && val <= 60) { // 0.15mm - 0.36mm (Sweet spot)
+                    tolBox.className = 'p-5 rounded-lg border-2 border-green-400 bg-green-50 transition-colors duration-300';
+                    tolTitle.className = 'text-lg font-bold text-green-800 mb-2';
+                    tolDesc.className = 'text-sm text-green-700';
+                    tolTitle.textContent = '最佳滑動/緊密配合';
+                    tolDesc.textContent = '保留了約 0.2mm - 0.3mm 的間隙，足以容納FDM機器的擠出誤差。榫頭能順暢插入且保有足夠的摩擦力保持結構穩固。';
+                } else { // > 0.36mm
+                    tolBox.className = 'p-5 rounded-lg border-2 border-amber-400 bg-amber-50 transition-colors duration-300';
+                    tolTitle.className = 'text-lg font-bold text-amber-800 mb-2';
+                    tolDesc.className = 'text-sm text-amber-700';
+                    tolTitle.textContent = '間隙配合 / 鬆動';
+                    tolDesc.textContent = '公差留得過大。雖然非常容易組裝，但零件之間會搖晃，喪失了榫卯結構應有的結構剛性，需要額外黏合劑。';
+                }
+            });
+
+            // --- 6. Shear Stress Section: Chart.js Bar ---
+            const ctxShear = document.getElementById('shearChart').getContext('2d');
+            new Chart(ctxShear, {
+                type: 'bar',
+                data: {
+                    labels: ['水平列印 (X/Y軸受力)', '垂直列印 (Z軸受拉扯/剪切)'],
+                    datasets: [{
+                        label: '抗拉/剪切強度 (MPa - 估值)',
+                        data: [45, 15], // Typical PLA strength drop across Z axis
+                        backgroundColor: [
+                            'rgba(217, 119, 6, 0.8)', // Amber for strong
+                            'rgba(168, 162, 158, 0.6)'  // Stone for weak
+                        ],
+                        borderColor: [
+                            'rgb(180, 83, 9)',
+                            'rgb(120, 113, 108)'
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: '斷裂強度', font: {size: 11} },
+                            grid: { color: '#f5f5f4' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { 
+                            callbacks: { 
+                                label: function(context) {
+                                    return context.dataIndex === 0 ? ' 高強度 (順層受力)' : ' 易斷裂 (撕裂層間結合)';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender 4.x 3.0: 管線架構與商業自動化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        carbon: '#121212',
+                        gold: '#D4AF37',
+                        platinum: '#E5E7EB',
+                        obsidian: '#1F2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #121212; color: #E5E7EB; font-family: 'Inter', system-ui, sans-serif; }
+        .premium-border { border: 1px solid rgba(212, 175, 55, 0.3); }
+        .gold-gradient { background: linear-gradient(135deg, #D4AF37 0%, #F1D27B 100%); }
+        .chart-bg { background: rgba(31, 41, 55, 0.5); border-radius: 1rem; padding: 1.5rem; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Header Section -->
+    <header class="max-w-6xl mx-auto mb-16 mt-8">
+        <div class="inline-block px-3 py-1 border border-gold text-gold text-xs font-bold tracking-widest uppercase mb-4">
+            Level 3.0: Pipeline Architect
+        </div>
+        <h1 class="text-4xl md:text-6xl font-black mb-6">從創作到<span class="text-gold">生產力矩陣</span></h1>
+        <p class="text-gray-400 text-lg max-w-2xl">
+            3.0 唔再討論美學，我哋討論「產量」、「標準化」同「自動化」。
+            將 Blender 變成你 AI 混合工作流中嘅核心引擎。
+        </p>
+    </header>
+
+    <main class="max-w-6xl mx-auto space-y-16">
+
+        <!-- Section 1: AI x Blender Workflow -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+                <h2 class="text-3xl font-bold mb-4 text-gold">🤖 AI 增強管線</h2>
+                <p class="text-gray-400 mb-6">
+                    2026 年，如果你仲係逐個像素畫紋理，你就輸咗。利用 AI 進行：
+                </p>
+                <ul class="space-y-4">
+                    <li class="flex items-center gap-3">
+                        <span class="w-2 h-2 bg-gold rounded-full"></span>
+                        <span><strong>Stable Diffusion 投影：</strong> 直接喺 3D 視圖生成無縫紋理。</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-2 h-2 bg-gold rounded-full"></span>
+                        <span><strong>AI 降噪 (Path Guiding)：</strong> Blender 4.2 內建更強嘅算圖採樣加速。</span>
+                    </li>
+                    <li class="flex items-center gap-3">
+                        <span class="w-2 h-2 bg-gold rounded-full"></span>
+                        <span><strong>Auto-Rigging AI：</strong> 用 AI 插件喺幾秒內完成複雜角色骨架。</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="chart-bg premium-border">
+                <canvas id="aiEfficiencyChart" height="250"></canvas>
+            </div>
+        </section>
+
+        <!-- Section 2: Render Economics -->
+        <section class="bg-obsidian rounded-2xl p-8 premium-border">
+            <h2 class="text-3xl font-bold mb-8 text-center">💰 算圖經濟學：成本平衡點</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center mb-8">
+                <div class="p-4 border-r border-gray-700">
+                    <div class="text-gold text-2xl font-bold mb-2">Local Workstation</div>
+                    <p class="text-xs text-gray-500">初期成本高，長期使用免費。適合：個人創作者、建模期。</p>
+                </div>
+                <div class="p-4 border-r border-gray-700">
+                    <div class="text-gold text-2xl font-bold mb-2">Cloud Render Farm</div>
+                    <p class="text-xs text-gray-500">按量收費，極速交付。適合：急件、超大型動畫。</p>
+                </div>
+                <div class="p-4">
+                    <div class="text-gold text-2xl font-bold mb-2">GPU Cluster</div>
+                    <p class="text-xs text-gray-500">技術門檻極高，效率最高。適合：小型工作室、商業製作。</p>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="costAnalysisChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Section 3: Professional Standards -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div class="space-y-6">
+                <h2 class="text-3xl font-bold text-gold">📐 商業交付標準 (Standardization)</h2>
+                <div class="space-y-4">
+                    <div class="p-4 bg-white/5 rounded-lg">
+                        <h4 class="font-bold mb-1">USD (Universal Scene Description)</h4>
+                        <p class="text-sm text-gray-400">Blender 同 Unreal, Maya, Omniverse 交換數據嘅唯一標準。唔好再用 FBX。</p>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-lg">
+                        <h4 class="font-bold mb-1">ACES 色彩管線</h4>
+                        <p class="text-sm text-gray-400">確保你嘅 Render 喺唔同螢幕同後期軟件 (DaVinci/AE) 中色彩一致。</p>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-lg">
+                        <h4 class="font-bold mb-1">Python API 自動化</h4>
+                        <p class="text-sm text-gray-400">當你要處理 100 個類似嘅變體時，寫 Script 係唯一選擇。Python 係 Blender 嘅靈魂。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col justify-center bg-gold/5 p-8 rounded-2xl border-l-4 border-gold">
+                <h3 class="text-2xl font-bold mb-4 italic">「如果你仲係手動撳制，你只係業餘人士。
+                真正的專業人士會建立一套系統，讓按鈕自己動。」</h3>
+                <p class="text-right text-gold font-mono">- 思維拍檔 3.0 備忘錄</p>
+            </div>
+        </section>
+
+        <!-- Section 4: Final Roadmap -->
+        <section class="text-center pb-20">
+            <h2 class="text-2xl font-bold mb-8">3.0 創作者進度清單</h2>
+            <div class="flex flex-wrap justify-center gap-4">
+                <span class="px-4 py-2 bg-gold/10 border border-gold/30 rounded-full text-sm">掌握 Python Scripting</span>
+                <span class="px-4 py-2 bg-gold/10 border border-gold/30 rounded-full text-sm">部署雲端算圖管線</span>
+                <span class="px-4 py-2 bg-gold/10 border border-gold/30 rounded-full text-sm">建立自定義 Asset Manager</span>
+                <span class="px-4 py-2 bg-gold/10 border border-gold/30 rounded-full text-sm">導入 AI 輔助 PBR 製作</span>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // AI Efficiency Chart
+            const ctxAI = document.getElementById('aiEfficiencyChart').getContext('2d');
+            new Chart(ctxAI, {
+                type: 'radar',
+                data: {
+                    labels: ['建模速度', '紋理細節', '降噪效率', '骨架綁定', '場景搭建'],
+                    datasets: [{
+                        label: '傳統工作流',
+                        data: [50, 60, 40, 30, 50],
+                        borderColor: '#374151',
+                        backgroundColor: 'rgba(55, 65, 81, 0.2)'
+                    }, {
+                        label: 'AI 增強管線 (3.0)',
+                        data: [85, 95, 90, 80, 90],
+                        borderColor: '#D4AF37',
+                        backgroundColor: 'rgba(212, 175, 55, 0.2)'
+                    }]
+                },
+                options: {
+                    plugins: { legend: { labels: { color: '#E5E7EB' } } },
+                    scales: { r: { grid: { color: '#374151' }, angleLines: { color: '#374151' }, pointLabels: { color: '#9CA3AF' }, ticks: { display: false } } }
+                }
+            });
+
+            // Cost Analysis Chart
+            const ctxCost = document.getElementById('costAnalysisChart').getContext('2d');
+            new Chart(ctxCost, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Month 1', 'Month 3', 'Month 6'],
+                    datasets: [{
+                        label: '自建工作站 (一次性支出高)',
+                        data: [100, 100, 105, 110, 120],
+                        borderColor: '#9CA3AF',
+                        tension: 0.1
+                    }, {
+                        label: '雲端算圖 (隨用隨付)',
+                        data: [10, 25, 60, 150, 300],
+                        borderColor: '#D4AF37',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#E5E7EB' } } },
+                    scales: { 
+                        y: { ticks: { display: false }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#9CA3AF' }, grid: { color: '#374151' } }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

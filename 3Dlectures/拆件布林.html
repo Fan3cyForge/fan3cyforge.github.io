@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-HK" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender AI 模型拆件與 Boolean 實戰指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .venn-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: all 0.3s ease;
+        }
+        .venn-left {
+            left: 20%;
+            border: 4px solid #3b82f6;
+        }
+        .venn-right {
+            right: 20%;
+            border: 4px solid #f97316;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen pb-20">
+
+<!-- Chosen Palette: Slate Dark Theme with Orange (Blender) and Blue accents -->
+<!-- Application Structure Plan: The SPA is structured into four main logical zones: 1. Executive Summary & Core Concepts (visualizing abstract tools), 2. Interactive Step-by-Step Workflow (guiding the user through the 4-step process with a tabbed interface for focused reading), 3. Data-Driven Insights (using a chart to highlight the critical 90% failure rate of unoptimized AI meshes), and 4. Troubleshooting Matrix (quick reference for errors). This dashboard approach transforms a linear document into an explorable tool, prioritizing the workflow sequence while keeping advanced tips readily accessible. -->
+<!-- Visualization & Content Choices: 1. Concepts -> CSS Venn Diagram -> Interactive buttons toggle CSS states to visually explain Difference/Union/Intersect without SVG. 2. Workflow -> Tabbed Interface -> Allows users to focus on one step at a time without feeling overwhelmed. 3. Failure Rate (90%) -> Chart.js Doughnut Chart -> Visually emphasizes the absolute necessity of the "Voxel Remesh" step. 4. Troubleshooting -> Grid layout -> Easy scanning for solutions when encountering errors. All choices strictly avoid SVG and Mermaid. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+<header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-6">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-orange-500 flex items-center justify-center font-bold text-xl">B</div>
+            <h1 class="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-yellow-300">
+                Blender AI 模型拆件與 Boolean 實戰指南
+            </h1>
+        </div>
+        <p class="mt-2 text-slate-400 text-sm md:text-base">
+            針對 Tripo.ai 等 AI 生成模型，解決 Mesh 密度極唔平均、內部重疊、冇卡榫結構嘅終極互動教學。
+        </p>
+    </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-8 space-y-12">
+
+    <section id="concepts" class="bg-slate-800/50 rounded-2xl p-6 md:p-8 border border-slate-700">
+        <div class="mb-6">
+            <h2 class="text-xl md:text-2xl font-bold text-white mb-2 flex items-center gap-2">
+                <span class="text-blue-400">🔧</span> 核心概念：Modifier 與 Boolean
+            </h2>
+            <p class="text-slate-300 leading-relaxed">
+                本區塊為您解析 Blender 中最重要嘅非破壞性編輯工具。Modifier（修改器）允許您隨時反悔或調整，而 Boolean（布林運算）則係製作卡榫嘅核心數學運算。透過下方嘅互動模擬器，您可以直觀理解三種 Boolean 嘅運作原理。
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-slate-800 rounded-xl p-6 border border-slate-700">
+                <h3 class="text-lg font-semibold text-orange-400 mb-4">互動 Boolean 模擬器</h3>
+                <div class="flex flex-wrap gap-2 mb-6" id="boolean-controls">
+                    <button data-type="difference" class="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium transition-colors ring-2 ring-orange-400">Difference (差集)</button>
+                    <button data-type="union" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors">Union (聯集)</button>
+                    <button data-type="intersect" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors">Intersect (交集)</button>
+                </div>
+                
+                <div class="relative w-full h-48 bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+                    <div id="sim-desc" class="absolute top-2 left-0 w-full text-center text-sm font-bold text-slate-300 z-10">物體 A (藍) 減去 物體 B (橙) -> 挖卡榫凹槽</div>
+                    
+                    <div id="venn-left" class="venn-circle venn-left bg-blue-500/50 z-20"></div>
+                    <div id="venn-right" class="venn-circle venn-right bg-slate-900 z-30 border-slate-900"></div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-slate-900/50 p-5 rounded-xl border-l-4 border-blue-500">
+                    <h4 class="font-bold text-blue-400 text-lg mb-1">Modifier (修改器)</h4>
+                    <p class="text-slate-400 text-sm">Blender 嘅非破壞性編輯工具。加咗 Modifier 去切開一件物體，只要未禁「Apply」，隨時可以反悔或者調整位置。</p>
+                </div>
+                <div class="bg-slate-900/50 p-5 rounded-xl border-l-4 border-orange-500">
+                    <h4 class="font-bold text-orange-400 text-lg mb-1">Difference (差集) ⭐️ 最常用</h4>
+                    <p class="text-slate-400 text-sm">物體 A 減去 物體 B。喺拆件流程中，主要用嚟喺主體上挖出完美脗合嘅卡榫凹槽 (母榫)。</p>
+                </div>
+                <div class="bg-slate-900/50 p-5 rounded-xl border-l-4 border-slate-500">
+                    <h4 class="font-bold text-slate-300 text-lg mb-1">Union & Intersect</h4>
+                    <p class="text-slate-400 text-sm">Union 將 A 同 B 融為一體 (AI 爛面易 error，建議用 Voxel Remesh 代替)。Intersect 只保留重疊部分，可用於特定切件需求。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="workflow" class="bg-slate-800/50 rounded-2xl p-6 md:p-8 border border-slate-700">
+        <div class="mb-6">
+            <h2 class="text-xl md:text-2xl font-bold text-white mb-2">🚀 實戰拆件流程：製作完美卡榫</h2>
+            <p class="text-slate-300 leading-relaxed">
+                跟隨以下四個步驟，將已經用 P (Separate) 分開嘅模型部件（例如「身體」與「右臂」），製作出可供 3D 打印精準組裝嘅公母卡榫。點擊下方步驟進行切換。
+            </p>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="w-full md:w-1/3 flex md:flex-col gap-2 overflow-x-auto pb-2 md:pb-0" id="step-tabs">
+                <button data-target="step1" class="text-left px-5 py-4 rounded-xl bg-blue-600 text-white font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02]">
+                    Step 1: 召喚修改器
+                </button>
+                <button data-target="step2" class="text-left px-5 py-4 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02]">
+                    Step 2: 建立公榫
+                </button>
+                <button data-target="step3" class="text-left px-5 py-4 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02]">
+                    Step 3: 挖出母榫
+                </button>
+                <button data-target="step4" class="text-left px-5 py-4 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02]">
+                    Step 4: 合併完成
+                </button>
+            </div>
+
+            <div class="w-full md:w-2/3 bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-700 min-h-[300px]">
+                <div id="step1" class="tab-content active">
+                    <div class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 font-bold rounded-full text-sm mb-4">第一步</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">召喚 Boolean 修改器</h3>
+                    <ul class="space-y-4 text-slate-300">
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">1.</span> 喺 3D 視圖，<strong>Left Click</strong> 選取你想挖窿嗰件主體 (例如「身體」)。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">2.</span> 望向畫面右下角嘅 <strong>Properties Panel (屬性面板)</strong>。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">3.</span> 搵一個 <span class="text-blue-400 font-bold">藍色士巴拿 (扳手) 圖示 🔧</span>。呢個就係 Modifier Properties。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">4.</span> 撳 <strong>Add Modifier</strong> -> 喺 Generate 嗰欄搵 <strong>Boolean</strong>。</li>
+                    </ul>
+                </div>
+
+                <div id="step2" class="tab-content">
+                    <div class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 font-bold rounded-full text-sm mb-4">第二步</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">建立卡榫柱體 (公榫)</h3>
+                    <ul class="space-y-4 text-slate-300">
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">1.</span> 撳 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">Shift + A</kbd> -> <span class="text-emerald-400">Mesh</span> -> <span class="text-emerald-400">Cylinder (圓柱體)</span>。呢個會用嚟做卡榫。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">2.</span> 用 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">S</kbd> (Scale) 將圓柱體縮細到啱比例。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">3.</span> 用 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">G</kbd> (Grab/Move) 同 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">R</kbd> (Rotate) 將圓柱體移去右臂嘅斷口位。</li>
+                        <li class="flex gap-3 mt-4 p-4 bg-orange-900/30 border border-orange-500/50 rounded-lg text-orange-200">
+                            💡 <strong>重要提示：</strong> 確保圓柱體有一半插喺身體入面，一半留喺外面。
+                        </li>
+                    </ul>
+                </div>
+
+                <div id="step3" class="tab-content">
+                    <div class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 font-bold rounded-full text-sm mb-4">第三步</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">執行 Boolean Difference (挖母榫)</h3>
+                    <ul class="space-y-4 text-slate-300">
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">1.</span> 重新選取「身體」(啱啱加咗 Boolean Modifier 嗰件)。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">2.</span> 喺 Modifier 面板，確保 Operation 係 <strong>Difference</strong>。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">3.</span> 喺 <strong>Object</strong> 旁邊，撳一下滴管圖示，然後去畫面點擊頭先整嘅<strong>圓柱體</strong>。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">4.</span> 呢個時候可能見唔到變化，因為圓柱體仲喺度擋住個窿。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">5.</span> 喺右上角 <strong>Outliner (大綱視窗)</strong>，搵到 Cylinder，點擊旁邊個<strong>眼睛圖示</strong> (隱藏它)。成功就會見到圓形凹槽！</li>
+                    </ul>
+                </div>
+
+                <div id="step4" class="tab-content">
+                    <div class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 font-bold rounded-full text-sm mb-4">第四步</div>
+                    <h3 class="text-2xl font-bold text-white mb-4">合併公榫到手臂</h3>
+                    <ul class="space-y-4 text-slate-300">
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">1.</span> 將隱藏咗嘅圓柱體顯示返出嚟。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">2.</span> 選取圓柱體，然後 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">Shift + Left Click</kbd> 選取「右臂」。(右臂會變成淺橙色，代表 Active Object)。</li>
+                        <li class="flex gap-3"><span class="text-orange-500 font-bold">3.</span> 撳 <kbd class="bg-slate-800 px-2 py-1 rounded border border-slate-600 text-sm">Ctrl + J</kbd> (Join)。</li>
+                        <li class="flex gap-3 mt-6 p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-lg text-emerald-200">
+                            🎉 <strong>完成！</strong> 而家圓柱體同右臂變成咗同一件 Object。公母榫製作完畢，可以準備處理公差。
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="analysis" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <div class="bg-slate-800/50 rounded-2xl p-6 md:p-8 border border-slate-700">
+            <h2 class="text-xl md:text-2xl font-bold text-white mb-2">📊 AI 模型 Boolean 失敗率分析</h2>
+            <p class="text-slate-400 text-sm mb-6">
+                直接對 AI 生成嘅 Mesh 進行 Boolean 操作，因為法線反轉及破洞問題，成功率極低。圖表展示 Voxel Remesh 前後嘅數據對比。點擊按鈕切換數據。
+            </p>
+            
+            <div class="flex justify-center gap-4 mb-4">
+                <button id="chartToggleDirect" class="px-4 py-2 rounded-lg bg-orange-600 text-white font-medium text-sm">直接 Boolean (無處理)</button>
+                <button id="chartToggleRemesh" class="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium text-sm">先做 Voxel Remesh</button>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="failureChart"></canvas>
+            </div>
+            
+            <div class="mt-6 p-4 bg-slate-900 rounded-lg border border-slate-700">
+                <h4 class="font-bold text-orange-400 mb-2">🔥 必做前置作業：Voxel Remesh (大掃除)</h4>
+                <p class="text-slate-300 text-sm">
+                    去右下角綠色三角形 Tab (Data Properties) 搵 <strong>Remesh</strong>。揀 <strong>Voxel</strong>，將 <code class="text-blue-300">Voxel Size</code> 設定為 <code class="text-blue-300">0.01m</code>，撳 Voxel Remesh。呢步會將所有重疊、爛面強制融合成一個實心物體。
+                </p>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-8">
+            
+            <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span class="text-emerald-400">📏</span> 打印公差 (Tolerance) 處理
+                </h2>
+                <p class="text-slate-300 mb-4 text-sm">
+                    如果柱體同凹槽係 1:1 大細，3D 打印完係<strong>絕對插唔入</strong>嘅。必須預留 0.1mm - 0.2mm 嘅空隙。
+                </p>
+                <ol class="list-decimal list-inside space-y-2 text-slate-300 text-sm bg-slate-900 p-4 rounded-lg">
+                    <li>喺完成挖窿 (Step 3) 之後。</li>
+                    <li>選取你條柱體 (公榫)。</li>
+                    <li>撳 <kbd class="bg-slate-800 px-1 py-0.5 rounded border border-slate-600 text-xs">Alt + S</kbd> (Shrink/Fatten)。</li>
+                    <li>向入縮極少極少 (大約 <span class="text-orange-400 font-bold">0.1mm - 0.2mm</span>)。</li>
+                </ol>
+            </div>
+
+            <div class="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 flex-grow">
+                <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span class="text-red-400">⚠️</span> 快速除錯 (Troubleshooting)
+                </h2>
+                <p class="text-slate-300 mb-4 text-sm">
+                    常見 Boolean 錯誤及解決方案快速檢索矩陣。
+                </p>
+                
+                <div class="space-y-4">
+                    <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-red-500">
+                        <h4 class="font-bold text-white text-sm mb-1">問題：窿唔見咗 / 模型消失咗？</h4>
+                        <div class="text-slate-400 text-xs mt-2">
+                            <span class="text-red-400">原因：</span> 法線反轉 (Normals Flipped) 或有爛面。<br>
+                            <span class="text-emerald-400">解法：</span> <kbd class="bg-slate-800 px-1 py-0.5 rounded text-white">Tab</kbd> 入 Edit Mode -> <kbd class="bg-slate-800 px-1 py-0.5 rounded text-white">A</kbd> 全選 -> <kbd class="bg-slate-800 px-1 py-0.5 rounded text-white">Shift + N</kbd> (Recalculate Normals)。唔得就要做 Voxel Remesh。
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900 p-4 rounded-lg border-l-4 border-yellow-500">
+                        <h4 class="font-bold text-white text-sm mb-1">問題：切口邊緣好狗牙 (起格)？</h4>
+                        <div class="text-slate-400 text-xs mt-2">
+                            <span class="text-yellow-400">原因：</span> 模型本身面數 (Resolution) 唔夠高。<br>
+                            <span class="text-emerald-400">解法：</span> Boolean 之前，加一個 Subdivision Surface Modifier 令佢滑啲，或者 Remesh 時較細個數值。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<script>
+    const btns = document.querySelectorAll('#boolean-controls button');
+    const vennLeft = document.getElementById('venn-left');
+    const vennRight = document.getElementById('venn-right');
+    const simDesc = document.getElementById('sim-desc');
+
+    btns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            btns.forEach(b => {
+                b.classList.remove('bg-orange-600', 'ring-2', 'ring-orange-400');
+                b.classList.add('bg-slate-700');
+            });
+            e.target.classList.remove('bg-slate-700');
+            e.target.classList.add('bg-orange-600', 'ring-2', 'ring-orange-400');
+
+            const type = e.target.dataset.type;
+            if (type === 'difference') {
+                vennLeft.className = 'venn-circle venn-left bg-blue-500/50 z-20 border-blue-500';
+                vennRight.className = 'venn-circle venn-right bg-slate-900 z-30 border-slate-900';
+                simDesc.textContent = '物體 A (藍) 減去 物體 B (背景色) -> 挖卡榫凹槽';
+            } else if (type === 'union') {
+                vennLeft.className = 'venn-circle venn-left bg-blue-500/80 z-20 border-blue-500';
+                vennRight.className = 'venn-circle venn-right bg-blue-500/80 z-20 border-blue-500';
+                simDesc.textContent = '將 A 同 B 融為一體 (實心相連)';
+            } else if (type === 'intersect') {
+                vennLeft.className = 'venn-circle venn-left bg-transparent z-20 border-slate-600 border-dashed';
+                vennRight.className = 'venn-circle venn-right bg-transparent z-20 border-slate-600 border-dashed';
+                vennLeft.style.boxShadow = "inset -30px 0 0 0 rgba(59, 130, 246, 0.8)";
+                vennRight.style.boxShadow = "inset 30px 0 0 0 rgba(59, 130, 246, 0.8)";
+                simDesc.textContent = '只保留 A 同 B 重疊嘅部分';
+                
+                setTimeout(() => {
+                    vennLeft.style.boxShadow = "";
+                    vennRight.style.boxShadow = "";
+                }, 2000);
+            }
+        });
+    });
+
+    const tabBtns = document.querySelectorAll('#step-tabs button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            tabBtns.forEach(b => {
+                b.className = 'text-left px-5 py-4 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02]';
+            });
+            e.target.className = 'text-left px-5 py-4 rounded-xl bg-blue-600 text-white font-bold whitespace-nowrap md:whitespace-normal transition-all transform hover:scale-[1.02] ring-2 ring-blue-400';
+
+            tabContents.forEach(c => c.classList.remove('active'));
+            const targetId = e.target.dataset.target;
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+
+    const ctx = document.getElementById('failureChart').getContext('2d');
+    
+    const dataDirect = [90, 10];
+    const dataRemesh = [1, 99];
+    
+    const chartConfig = {
+        type: 'doughnut',
+        data: {
+            labels: ['操作失敗 (Error/破洞)', '操作成功'],
+            datasets: [{
+                data: dataDirect,
+                backgroundColor: ['#ef4444', '#10b981'],
+                borderColor: '#1e293b',
+                borderWidth: 2,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#cbd5e1', padding: 20, font: { family: 'sans-serif' } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return ' ' + context.label + ': ' + context.parsed + '%';
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    let failureChart = new Chart(ctx, chartConfig);
+
+    const btnDirect = document.getElementById('chartToggleDirect');
+    const btnRemesh = document.getElementById('chartToggleRemesh');
+
+    btnDirect.addEventListener('click', () => {
+        btnDirect.classList.replace('bg-slate-700', 'bg-orange-600');
+        btnDirect.classList.remove('hover:bg-slate-600');
+        btnRemesh.classList.replace('bg-orange-600', 'bg-slate-700');
+        btnRemesh.classList.add('hover:bg-slate-600');
+        
+        failureChart.data.datasets[0].data = dataDirect;
+        failureChart.update();
+    });
+
+    btnRemesh.addEventListener('click', () => {
+        btnRemesh.classList.replace('bg-slate-700', 'bg-orange-600');
+        btnRemesh.classList.remove('hover:bg-slate-600');
+        btnDirect.classList.replace('bg-orange-600', 'bg-slate-700');
+        btnDirect.classList.add('hover:bg-slate-600');
+        
+        failureChart.data.datasets[0].data = dataRemesh;
+        failureChart.update();
+    });
+
+</script>
+</body>
+</html>

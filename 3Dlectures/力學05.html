@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學 Vol.5：材料微觀物理與金屬相變</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #020617; color: #f8fafc; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: auto; height: 350px; }
+        .tab-btn { border-bottom: 2px solid transparent; }
+        .tab-btn.active { border-color: #fbbf24; color: #fbbf24; }
+        .tab-content { display: none; animation: slideIn 0.5s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* Sintering Simulation */
+        .particle-container { width: 100%; height: 120px; background: #1e293b; border-radius: 12px; position: relative; overflow: hidden; }
+        .particle { position: absolute; width: 10px; height: 10px; background: #94a3b8; border-radius: 50%; transition: all 1s ease; }
+        .sintered .particle { transform: scale(1.4); background: #fbbf24; margin: -2px; border-radius: 2px; box-shadow: 0 0 5px #f59e0b; }
+        
+        /* Fiber visualizer */
+        .fiber-layer { height: 40px; background: #334155; position: relative; overflow: hidden; margin-bottom: 4px; }
+        .fiber-strand { height: 2px; background: #60a5fa; position: absolute; width: 100%; top: 50%; opacity: 0.6; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Chosen Palette: Industrial Amber (Amber 400) with Slate 950 for a "Materials Lab" feel. -->
+    
+    <div class="max-w-6xl mx-auto px-6 py-10">
+        
+        <header class="mb-12 border-l-4 border-amber-500 pl-6">
+            <div class="flex items-center gap-3">
+                <span class="bg-amber-500 text-slate-900 px-2 py-1 text-xs font-black rounded uppercase">Experimental</span>
+                <h1 class="text-4xl font-black text-white tracking-tight uppercase">Physics <span class="text-amber-500">Vol.5</span></h1>
+            </div>
+            <p class="text-slate-400 mt-2 text-lg italic">Micro-Structural Engineering & Metallic Transitions</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex gap-8 mb-12 border-b border-slate-800">
+            <button class="tab-btn active pb-4 text-sm font-bold uppercase tracking-tighter" data-target="annealing">退火物理 (Annealing)</button>
+            <button class="tab-btn pb-4 text-sm font-bold uppercase tracking-tighter" data-target="fibers">纖維強化 (Fibers)</button>
+            <button class="tab-btn pb-4 text-sm font-bold uppercase tracking-tighter" data-target="sintering">金屬燒結 (Sintering)</button>
+            <button class="tab-btn pb-4 text-sm font-bold uppercase tracking-tighter" data-target="rf">射頻物理 (RF Physics)</button>
+        </nav>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-10">
+            
+            <!-- Main Display -->
+            <div class="lg:col-span-8 space-y-10">
+                
+                <!-- Section: Annealing -->
+                <section id="annealing" class="tab-content active">
+                    <h2 class="text-2xl font-bold mb-4 text-amber-400">退火與結晶：重建分子鏈</h2>
+                    <p class="text-slate-400 mb-6 text-sm">
+                        3D 打印最致命嘅係「層間結合力」。退火 (Annealing) 係將零件重新加熱到 Tg 以上、熔點以下，畀分子鏈有時間跨越層界進行「擴散」。
+                    </p>
+                    <div class="grid md:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                            <h3 class="text-xs font-bold text-slate-500 mb-4 uppercase">強度提升對比 (%)</h3>
+                            <div class="chart-container">
+                                <canvas id="annealChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                                <h4 class="text-amber-400 font-bold text-sm mb-1">🔴 尺寸風險</h4>
+                                <p class="text-xs text-slate-300">退火會導致零件收縮（X/Y 軸縮小 1-2%，Z 軸可能增加）。你必須喺設計時就預留「物理補償量」。</p>
+                            </div>
+                            <div class="p-4 bg-slate-800 rounded-xl">
+                                <h4 class="text-slate-200 font-bold text-sm mb-1">結晶度 (Crystallinity)</h4>
+                                <p class="text-xs text-slate-400">緩慢冷卻會增加聚合物結晶度，令零件更硬、耐熱性更高。</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Sintering -->
+                <section id="sintering" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4 text-amber-400">Metal FDM：由綠體到金屬</h2>
+                    <p class="text-slate-400 mb-6 text-sm">
+                        使用含有 80% 金屬粉末嘅耗材印出「Green Part」（綠體），然後放入燒結爐。物理上，粉末顆粒會透過原子擴散融合。
+                    </p>
+                    <div class="bg-slate-900 p-8 rounded-2xl border border-slate-800 mb-6">
+                        <div id="particle-box" class="particle-container mb-6 flex flex-wrap gap-2 p-4 justify-center items-center">
+                            <!-- JS particles will go here -->
+                        </div>
+                        <div class="flex justify-center gap-4">
+                            <button onclick="simulateSinter()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 px-6 py-2 rounded-full font-black text-xs uppercase">Start Sintering Process</button>
+                            <button onclick="resetParticles()" class="border border-slate-700 px-6 py-2 rounded-full text-xs font-bold">Reset State</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-500 italic text-center uppercase tracking-widest">警告：燒結收縮率通常高達 15-20%，需要極精確嘅非等比例縮放模擬。</p>
+                </section>
+
+                <!-- Section: RF Physics -->
+                <section id="rf" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4 text-amber-400">RF 物理：網絡工程師的 3D 打印</h2>
+                    <p class="text-slate-400 mb-6 text-sm">
+                        作為網絡專家，你可以透過調整填充率（Infill Density）嚟精確控制零件嘅 **電介質常數 (Dielectric Constant)**。
+                    </p>
+                    <div class="p-6 bg-slate-900 rounded-2xl border border-slate-800">
+                        <div class="chart-container">
+                            <canvas id="rfChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Side Intelligence Panel -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-amber-500 p-6 rounded-3xl text-slate-950 shadow-xl">
+                    <h3 class="text-lg font-black mb-3 uppercase">物性控制清單</h3>
+                    <div class="space-y-4 text-sm font-bold">
+                        <div class="border-b border-slate-900/10 pb-2">
+                            <span class="block opacity-60">強度優化</span>
+                            <span>Z-Axis Annealing</span>
+                        </div>
+                        <div class="border-b border-slate-900/10 pb-2">
+                            <span class="block opacity-60">熱傳導優化</span>
+                            <span>Boron Nitride Fillers</span>
+                        </div>
+                        <div class="border-b border-slate-900/10 pb-2">
+                            <span class="block opacity-60">電磁優化</span>
+                            <span>Carbon Black Gradient</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-widest">專家建議：相變管理</h4>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        如果你要印一個能夠承受 300°C 嘅零件，唔一定要用 PEEK。用 PLA 退火提升結晶度，有時仲好過直接印高溫料。物理係講緊分子鏈嘅排列，而唔係單純材料名稱。
+                    </p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab Switcher
+            const btns = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.target).classList.add('active');
+                });
+            });
+
+            // Annealing Strength Chart
+            const ctxAnneal = document.getElementById('annealChart').getContext('2d');
+            new Chart(ctxAnneal, {
+                type: 'bar',
+                data: {
+                    labels: ['PLA (Raw)', 'PLA (Annealed)', 'ABS (Raw)', 'ABS (Annealed)'],
+                    datasets: [{
+                        label: '抗拉強度 (MPa)',
+                        data: [45, 62, 38, 42],
+                        backgroundColor: ['#475569', '#fbbf24', '#475569', '#f59e0b']
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // RF Dielectric Chart
+            const ctxRf = document.getElementById('rfChart').getContext('2d');
+            new Chart(ctxRf, {
+                type: 'line',
+                data: {
+                    labels: ['0%', '20%', '40%', '60%', '80%', '100%'],
+                    datasets: [{
+                        label: '電介質常數 (Effective Er)',
+                        data: [1.0, 1.4, 1.8, 2.2, 2.6, 3.0],
+                        borderColor: '#fbbf24',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: { x: { title: { display: true, text: 'Infill Density (%)', color: '#64748b' } } }
+                }
+            });
+
+            // Setup Sintering Particles
+            resetParticles();
+        });
+
+        function resetParticles() {
+            const container = document.getElementById('particle-box');
+            container.innerHTML = '';
+            container.classList.remove('sintered');
+            for(let i=0; i<60; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random() * 95 + '%';
+                p.style.top = Math.random() * 80 + '%';
+                container.appendChild(p);
+            }
+        }
+
+        function simulateSinter() {
+            document.getElementById('particle-box').classList.add('sintered');
+        }
+    </script>
+</body>
+</html>
