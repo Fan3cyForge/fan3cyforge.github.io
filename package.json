@@ -1,0 +1,7 @@
+{
+  "name": "fan3cyforge-github-io",
+  "private": true,
+  "scripts": {
+    "sync": "python scripts/sync_assets.py"
+  }
+}

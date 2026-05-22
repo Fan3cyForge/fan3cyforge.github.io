@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>參考圖片 | Fan³cy Forge</title>
+    <link rel="stylesheet" href="/assets/css/brand.css">
+    <script src="/assets/js/brand-engine.js"></script>
+    <script src="/assets/js/search-engine.js" defer></script>
+</head>
+<body class="f3f-brand">
+    <div class="f3f-ref-page">
+        <a class="f3f-btn" href="/index.html">返回主頁</a>
+        <h1 class="f3f-neon-title" style="margin:20px 0 0;font-size:clamp(1.4rem,4vw,1.85rem);">REFERENCE // 參考圖片</h1>
+        <p class="f3f-muted" style="margin:12px 0 0;max-width:640px;line-height:1.7;">以下為 <code>assets/images/</code> 內所有 WebP（由同步腳本產生之 <code>reference-images.json</code>）。點圖可開啟原檔。</p>
+        <div class="f3f-search-section" id="f3f-search-section" style="margin-top:20px;">
+            <div class="f3f-search-row">
+                <label class="f3f-visually-hidden" for="f3f-search-input">搜尋參考圖片檔名</label>
+                <input type="search" id="f3f-search-input" class="f3f-search-input" placeholder="搜尋檔名或路徑…" autocomplete="off" enterkeyhint="search">
+                <button type="button" class="f3f-search-clear" id="f3f-search-clear">清除</button>
+            </div>
+            <p class="f3f-search-empty" id="f3f-search-empty" hidden>🔴 搵唔到相關資源，試吓換個關鍵字？</p>
+        </div>
+        <div id="f3f-ref-grid-host" class="f3f-ref-grid"><p class="f3f-muted" style="grid-column:1/-1;text-align:center;">載入 reference-images.json…</p></div>
+        <div class="f3f-ref-cta">
+            <p style="margin:0;">如果自己整唔到就想體驗，可以 WhatsApp 我落單。</p>
+            <div class="f3f-ref-cta-actions">
+                <a class="f3f-btn f3f-neon-btn" href="https://wa.me/85252827144?text=%E6%88%91%E6%83%B3%E7%94%B1%E5%8F%83%E8%80%83%E5%9C%96%E7%89%87%E8%90%BD%E5%96%AE" target="_blank" rel="noopener noreferrer">WhatsApp 落單</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var host = document.getElementById("f3f-ref-grid-host");
+            function bust(u) {
+                return typeof f3fCacheBust === "function" ? f3fCacheBust(u) : u + "?v=" + Date.now();
+            }
+            fetch(bust("/reference-images.json"))
+                .then(function (r) {
+                    if (!r.ok) throw new Error("ref");
+                    return r.json();
+                })
+                .then(function (data) {
+                    var imgs = (data && data.images) || [];
+                    host.innerHTML = "";
+                    if (!imgs.length) {
+                        host.innerHTML = "<p class=\"f3f-muted\" style=\"grid-column:1/-1;text-align:center;\">尚無圖片索引 — 請執行 python scripts/sync_assets.py</p>";
+                        return;
+                    }
+                    imgs.forEach(function (src) {
+                        var a = document.createElement("a");
+                        a.href = src;
+                        a.target = "_blank";
+                        a.rel = "noopener noreferrer";
+                        var img = document.createElement("img");
+                        img.src = src;
+                        img.alt = "";
+                        img.loading = "lazy";
+                        a.appendChild(img);
+                        host.appendChild(a);
+                    });
+                })
+                .catch(function () {
+                    host.innerHTML = "<p style=\"color:var(--f3f-pink);grid-column:1/-1;text-align:center;\">無法載入 reference-images.json</p>";
+                });
+        });
+    </script>
+</body>
+</html>

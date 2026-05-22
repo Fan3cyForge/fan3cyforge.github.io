@@ -1,0 +1,165 @@
+{
+  "generatedAt": "2026-05-21T06:08:20+00:00",
+  "markdownArticles": [
+    {
+      "title": "2026 3D 打印全自動化：Headless Slicing 神器對決",
+      "path": "3Dlectures/3DPrint/auto3d.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T08:29:25+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D 列印常見錯誤",
+      "path": "3Dlectures/3DPrint/lectures01常見問題.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "PLA vs PETG 參數攻略",
+      "path": "3Dlectures/3DPrint/lectures02p2s.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "高精度手辦列印：終局參數解析",
+      "path": "3Dlectures/3DPrint/lectures03p1s.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Mochi 模型分件設計解析",
+      "path": "3Dlectures/3DPrint/MoChi拆件.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學：功能性零件設計指南",
+      "path": "3Dlectures/3DPrint/力學01.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.2：進階應力與動態控制",
+      "path": "3Dlectures/3DPrint/力學02.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.3：生成式優化與應力流",
+      "path": "3Dlectures/3DPrint/力學03.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.4：4D 打印與智能材料",
+      "path": "3Dlectures/3DPrint/力學04.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.5：材料微觀物理與金屬相變",
+      "path": "3Dlectures/3DPrint/力學05.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.6：極限工藝深層拆解",
+      "path": "3Dlectures/3DPrint/力學05_1.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "3D打印工程物理學 Vol.7：失效分析與拓撲優化",
+      "path": "3Dlectures/3DPrint/力學07.md",
+      "category": "3D 打印教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 3D 新手入門完全指南：三冊互動教學",
+      "path": "3Dlectures/Blender/blender01.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 4.x 創作者入坑生存指南",
+      "path": "3Dlectures/Blender/blender02.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 4.x 創作者入坑生存指南",
+      "path": "3Dlectures/Blender/blender03.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 4.x 入坑指南 2.0: 進階戰略",
+      "path": "3Dlectures/Blender/blender04.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 4.x 3.0: 管線架構與商業自動化",
+      "path": "3Dlectures/Blender/blender05.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender 4.x 4.0: 空間計算與元引擎戰略",
+      "path": "3Dlectures/Blender/blender06.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "Blender AI 模型拆件與 Boolean 實戰指南",
+      "path": "3Dlectures/Blender/拆件布林.md",
+      "category": "Blender 教學",
+      "categoryGroup": "教學",
+      "modified": "2026-05-03T04:36:45+00:00",
+      "description": ""
+    },
+    {
+      "title": "歡迎來到 Fan³cy Forge",
+      "path": "_posts/welcome.md",
+      "category": "入口",
+      "categoryGroup": "文章與資源",
+      "modified": "2026-05-03T04:29:28+00:00",
+      "description": ""
+    }
+  ]
+}

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學 Vol.7：失效分析與拓撲優化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #fafaf9; color: #1c1917; scroll-behavior: smooth; }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        /* Failure Animation */
+        .part-layer { width: 100%; height: 20px; background: #d6d3d1; border: 1px solid #a8a29e; transition: all 0.5s ease; position: relative; }
+        .crack { position: absolute; width: 0; height: 100%; background: #ef4444; left: 50%; opacity: 0; transition: all 0.3s ease; }
+        .delaminating .part-layer:nth-child(3) { transform: translateY(-10px) rotate(2deg); border-color: #ef4444; }
+        .delaminating .crack { width: 4px; opacity: 1; }
+
+        /* Stress Canvas Container */
+        #stress-canvas { background: #1c1917; border-radius: 0.75rem; cursor: crosshair; width: 100%; height: 350px; }
+
+        .control-panel { background: white; border: 1px solid #e7e5e4; border-radius: 1rem; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        
+        .nav-link { border-bottom: 2px solid transparent; transition: all 0.2s; cursor: pointer; opacity: 0.6; }
+        .nav-link.active { border-bottom-color: #f59e0b; opacity: 1; font-weight: bold; }
+        
+        .step-content { display: none; }
+        .step-content.active { display: block; animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="mb-12 border-l-8 border-amber-500 pl-6 py-2">
+            <h1 class="text-4xl font-black tracking-tight text-stone-900">Vol.7：零件失效分析與拓撲優化</h1>
+            <p class="text-stone-500 mt-2 font-medium">從「點樣斷」學會「點樣設計」— 天才工程師的力學思維</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex gap-8 mb-8 border-b border-stone-200 overflow-x-auto pb-2">
+            <span class="nav-link active pb-2 whitespace-nowrap" data-target="step1">1. 失效模式拆解</span>
+            <span class="nav-link pb-2 whitespace-nowrap" data-target="step2">2. 互動應力模擬</span>
+            <span class="nav-link pb-2 whitespace-nowrap" data-target="step3">3. 拓撲優化 (TO)</span>
+            <span class="nav-link pb-2 whitespace-nowrap" data-target="step4">4. 打印方向矩陣</span>
+        </nav>
+
+        <main>
+            <!-- SECTION 1: FAILURE MODES -->
+            <section id="step1" class="step-content active">
+                <div class="grid md:grid-cols-2 gap-10">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4">為什麼 3D 打印件會斷？</h2>
+                        <p class="text-stone-600 mb-6 leading-relaxed">
+                            大部份工程師嘅零件喺 Z 軸（層間）斷裂，係因為 <strong>層間結合力 (Interlayer Adhesion)</strong> 永遠弱過材料本身的強度。當受力方向垂直於層面時，會發生「剝離失效」。
+                        </p>
+                        
+                        <div class="control-panel">
+                            <h3 class="text-sm font-bold uppercase text-stone-400 mb-4">失效物理演示</h3>
+                            <div id="part-model" class="flex flex-col gap-1 mb-6">
+                                <div class="part-layer"><div class="crack"></div></div>
+                                <div class="part-layer"><div class="crack"></div></div>
+                                <div class="part-layer"><div class="crack"></div></div>
+                                <div class="part-layer"><div class="crack"></div></div>
+                                <div class="part-layer"><div class="crack"></div></div>
+                            </div>
+                            <div class="flex gap-4">
+                                <button onclick="simulateFailure('brittle')" class="flex-1 bg-stone-800 text-white py-2 rounded text-sm font-bold hover:bg-stone-700">脆性斷裂 (X/Y)</button>
+                                <button onclick="simulateFailure('delam')" class="flex-1 bg-red-600 text-white py-2 rounded text-sm font-bold hover:bg-red-700">層間剝離 (Z)</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 p-6 rounded-2xl border border-amber-100">
+                        <h3 class="font-bold text-amber-900 mb-4 flex items-center gap-2">
+                            🔴 盲區提醒：等效應力 (von Mises)
+                        </h3>
+                        <p class="text-sm text-amber-800 leading-relaxed mb-4">
+                            唔好以為零件只要厚就唔會斷。喺 3D 打印入面，應力會喺 <strong>銳角 (Sharp Corners)</strong> 同 <strong>層間接縫 (Seams)</strong> 處產生應力集中（Stress Concentration）。
+                        </p>
+                        <ul class="space-y-3 text-sm text-amber-900">
+                            <li class="flex gap-2"><strong>1.</strong> 增加 Fillets（圓角）可以將應力分布面積擴大 3-5 倍。</li>
+                            <li class="flex gap-2"><strong>2.</strong> 避開 90 度垂直受力，盡量讓力流沿著打印線路（Toolpath）走。</li>
+                            <li class="flex gap-2"><strong>3.</strong> 填充率 (Infill) 超過 40% 後，對強度的邊際貢獻會大幅下降，倒不如增加 Wall Loops（壁厚）。</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: STRESS SIMULATOR -->
+            <section id="step2" class="step-content">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold mb-2">Live Stress Simulator (2D)</h2>
+                    <p class="text-stone-600">喺黑色區域點擊或拖拽，模擬對懸臂樑（Cantilever Beam）施加力。顏色愈紅，代表 <strong>von Mises Stress</strong> 愈高。</p>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <canvas id="stress-canvas"></canvas>
+                        <div class="mt-4 flex justify-between text-xs font-mono text-stone-500">
+                            <span>固定端 (Fixed Support)</span>
+                            <span>施力端 (Load Point)</span>
+                        </div>
+                    </div>
+                    <div class="control-panel flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold mb-4 text-stone-800">載荷參數</h3>
+                            <label class="block text-xs font-bold text-stone-500 uppercase mb-2">力的大小 (Magnitude)</label>
+                            <input type="range" id="force-mag" min="10" max="100" value="50" class="w-full mb-6 accent-amber-500">
+                            
+                            <div class="p-4 bg-stone-100 rounded-lg">
+                                <h4 class="text-xs font-bold text-stone-600 uppercase mb-2">實時分析報告</h4>
+                                <div id="stress-data" class="text-sm font-mono space-y-1">
+                                    <div>Max Stress: <span class="text-red-600 font-bold">0.00 MPa</span></div>
+                                    <div>Safety Factor: <span class="text-green-600 font-bold">N/A</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-stone-400 mt-6 leading-relaxed italic">
+                            * 註：此為簡化版有限元分析 (FEA) 演示，用於展示應力傳導路徑。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: TOPOLOGY OPTIMIZATION -->
+            <section id="step3" class="step-content">
+                <div class="grid md:grid-cols-2 gap-10 items-center">
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4">拓撲優化：用最少的料，承最重的力</h2>
+                        <p class="text-stone-600 mb-6 leading-relaxed">
+                            既然我哋知應力邊度高邊度低，我哋就可以將「無壓力」嘅地方切走。呢個過程叫 <strong>Topology Optimization (TO)</strong>。
+                        </p>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4 p-4 border border-stone-200 rounded-xl hover:border-amber-500 transition cursor-pointer group" onclick="showTO('before')">
+                                <div class="w-12 h-12 bg-stone-200 rounded flex items-center justify-center font-bold group-hover:bg-amber-100">1</div>
+                                <div>
+                                    <h4 class="font-bold">原始方塊設計 (Traditional)</h4>
+                                    <p class="text-xs text-stone-500">重量：100% | 應力分布不均</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4 p-4 border border-stone-200 rounded-xl hover:border-amber-500 transition cursor-pointer group" onclick="showTO('after')">
+                                <div class="w-12 h-12 bg-stone-200 rounded flex items-center justify-center font-bold group-hover:bg-amber-100">2</div>
+                                <div>
+                                    <h4 class="font-bold">生成式設計 (Generative)</h4>
+                                    <p class="text-xs text-stone-500">重量：35% | 應力分布均勻，骨架化結構</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative bg-stone-100 rounded-2xl p-8 flex items-center justify-center min-h-[300px] border border-stone-200">
+                        <div id="to-viz-container" class="w-full h-48 bg-stone-300 rounded-lg relative overflow-hidden flex items-center justify-center">
+                             <div id="to-shape" class="w-4/5 h-3/4 bg-stone-800 transition-all duration-1000 ease-in-out shadow-xl"></div>
+                        </div>
+                        <div class="absolute bottom-4 right-4 bg-white px-3 py-1 rounded-full text-[10px] font-bold shadow-sm border border-stone-100">
+                            體積縮減：<span id="to-reduction">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: ORIENTATION MATRIX -->
+            <section id="step4" class="step-content">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold mb-2">強度方向矩陣 (Strength Orientation Matrix)</h2>
+                    <p class="text-stone-600">揀啱放置方向（Placement），分分鐘比你換材料更有效。</p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-12">
+                    <div class="chart-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="control-panel">
+                            <h3 class="font-bold text-stone-800 mb-4">放置策略建議</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-stone-500">XY 平面 (Flat)</span>
+                                    <span class="font-bold text-green-600">最強抗拉 (Tensile Max)</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-stone-500">45 度斜放</span>
+                                    <span class="font-bold text-amber-600">綜合平衡 (Balanced)</span>
+                                </div>
+                                <div class="flex justify-between items-center text-sm">
+                                    <span class="text-stone-500">Z 軸直立 (Upright)</span>
+                                    <span class="font-bold text-red-600">最易斷裂 (Interlayer Weak)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-stone-800 text-stone-100 p-6 rounded-2xl">
+                            <h4 class="font-bold mb-2 flex items-center gap-2">💡 天才小貼士：剪力牆思維</h4>
+                            <p class="text-sm text-stone-300 leading-relaxed">
+                                如果你印緊一個長形掛鈎，千祈唔好「企直」嚟印。要橫放，令到掛鈎嘅彎曲應力轉化為層內（Intra-layer）嘅抗拉力。如果幾何形狀唔容許，請考慮 <strong>Split & Glue (分開印再黐合)</strong>，將每個部件都用最強嘅角度印出嚟。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- 1. Navigation Logic ---
+        const navLinks = document.querySelectorAll('.nav-link');
+        const stepContents = document.querySelectorAll('.step-content');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.forEach(l => l.classList.remove('active'));
+                stepContents.forEach(s => s.classList.remove('active'));
+                link.classList.add('active');
+                document.getElementById(link.dataset.target).classList.add('active');
+                if(link.dataset.target === 'step2') initStressSim();
+            });
+        });
+
+        // --- 2. Failure Simulation (Step 1) ---
+        function simulateFailure(type) {
+            const model = document.getElementById('part-model');
+            model.className = "flex flex-col gap-1 mb-6";
+            void model.offsetWidth; // trigger reflow
+            if(type === 'delam') model.classList.add('delaminating');
+            else {
+                // Brittle: flash layers then shake
+                model.style.transform = 'translateX(5px)';
+                setTimeout(() => model.style.transform = 'translateX(-5px)', 50);
+                setTimeout(() => model.style.transform = 'translateX(0)', 100);
+            }
+        }
+
+        // --- 3. Stress Simulator (Step 2) ---
+        let canvas, ctx;
+        function initStressSim() {
+            canvas = document.getElementById('stress-canvas');
+            if(!canvas) return;
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            drawStressMap(0.5, 0.5);
+
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / canvas.width;
+                const y = (e.clientY - rect.top) / canvas.height;
+                drawStressMap(x, y);
+            });
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+        }
+
+        function drawStressMap(mouseX, mouseY) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const mag = document.getElementById('force-mag').value / 100;
+            
+            // Draw Cantilever Beam
+            const beamHeight = 60;
+            const beamY = canvas.height / 2 - beamHeight / 2;
+            
+            // Fixed Support
+            ctx.fillStyle = '#444';
+            ctx.fillRect(0, 0, 15, canvas.height);
+
+            // Simulation Gradient (Heatmap)
+            const grad = ctx.createRadialGradient(
+                canvas.width * 0.1, canvas.height / 2, 0, 
+                canvas.width * 0.1, canvas.height / 2, canvas.width * 0.9
+            );
+            
+            // Physics logic: Stress increases near support and near load point
+            // This is a visual heuristic
+            const stressLevel = Math.min(1, (mouseX * mag * 1.5));
+            const colorR = Math.floor(150 + 105 * stressLevel);
+            const colorG = Math.floor(150 - 150 * stressLevel);
+            
+            grad.addColorStop(0, `rgb(${colorR}, ${colorG}, 50)`);
+            grad.addColorStop(1, '#1c1917');
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(15, beamY, canvas.width - 15, beamHeight);
+
+            // Force Vector
+            ctx.beginPath();
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 4;
+            ctx.moveTo(mouseX * canvas.width, mouseY * canvas.height);
+            ctx.lineTo(mouseX * canvas.width, (mouseY * canvas.height) + (mag * 50));
+            ctx.stroke();
+            
+            // Update Data
+            const maxStress = (stressLevel * 80).toFixed(2);
+            const sf = (80 / (maxStress || 1)).toFixed(2);
+            document.getElementById('stress-data').innerHTML = `
+                <div>Max Stress: <span class="text-red-600 font-bold">${maxStress} MPa</span></div>
+                <div>Safety Factor: <span class="${sf > 2 ? 'text-green-600' : 'text-red-600'} font-bold">${sf}</span></div>
+            `;
+        }
+
+        // --- 4. Topology Opt (Step 3) ---
+        function showTO(state) {
+            const shape = document.getElementById('to-shape');
+            const reduction = document.getElementById('to-reduction');
+            if(state === 'after') {
+                shape.style.width = '60%';
+                shape.style.height = '40%';
+                shape.style.clipPath = 'polygon(0% 0%, 100% 0%, 100% 30%, 80% 30%, 60% 100%, 40% 100%, 20% 30%, 0% 30%)';
+                shape.style.backgroundColor = '#f59e0b';
+                reduction.textContent = '65%';
+            } else {
+                shape.style.width = '80%';
+                shape.style.height = '75%';
+                shape.style.clipPath = 'none';
+                shape.style.backgroundColor = '#1c1917';
+                reduction.textContent = '0%';
+            }
+        }
+
+        // --- 5. Orientation Radar (Step 4) ---
+        const ctxRadar = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctxRadar, {
+            type: 'radar',
+            data: {
+                labels: ['抗拉強度', '抗壓強度', '衝擊韌性', '層間結合', '尺寸精度'],
+                datasets: [{
+                    label: 'XY 平面放置 (Flat)',
+                    data: [95, 80, 90, 100, 95],
+                    fill: true,
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderColor: '#22c55e',
+                }, {
+                    label: 'Z 軸直立 (Upright)',
+                    data: [30, 90, 20, 20, 80],
+                    fill: true,
+                    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                    borderColor: '#ef4444',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

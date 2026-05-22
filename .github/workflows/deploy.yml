@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+# 這是解決紅色叉叉的關鍵：加入權限設定
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Cache Pages build metadata
+        uses: actions/cache@v4
+        with:
+          path: |
+            .jekyll-cache
+            _site
+          key: pages-${{ runner.os }}-${{ hashFiles('**/*.html', '**/*.css', '**/*.js', '**/*.json') }}
+          restore-keys: |
+            pages-${{ runner.os }}-
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Verify deploy path exists
+        run: test -d .
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

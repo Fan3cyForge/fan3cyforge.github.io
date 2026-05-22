@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender 4.x 創作者入坑生存指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandBg: '#F4F7F6',
+                        brandText: '#1A1C22',
+                        brandPrimary: '#FF6B35',
+                        brandSecondary: '#4E596F',
+                        brandAccent: '#2EC4B6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #F4F7F6; color: #1A1C22; font-family: system-ui, -apple-system, sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 700px; margin: 0 auto; height: 350px; }
+        .card { background: white; border-radius: 1rem; border: 1px solid #E2E8F0; transition: all 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .step-active { border-color: #FF6B35; color: #FF6B35; background: rgba(255, 107, 53, 0.05); }
+    </style>
+</head>
+<body class="pb-12">
+
+    <!-- Header -->
+    <header class="py-20 px-4 text-center border-b border-gray-200 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <div class="inline-block px-4 py-1 bg-brandPrimary/10 text-brandPrimary rounded-full text-sm font-bold mb-4 uppercase tracking-widest">
+                2026 專業版更新
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black mb-6">Blender <span class="text-brandPrimary">4.x</span> 創作生存指南</h1>
+            <p class="text-lg text-brandSecondary leading-relaxed">
+                面對無數教學下架與版本更迭，本指南專注於「底層邏輯」與「硬核實踐」。<br class="hidden md:block">
+                唔需要追逐特定 Link，掌握呢套方法論，你就可以應對任何版本。
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 mt-16 space-y-24">
+
+        <!-- Section 1: Hardware Logic -->
+        <section>
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold mb-4">🖥️ 硬件投資報修比 (ROI)</h2>
+                <p class="text-brandSecondary">唔好盲目追求頂配，要根據你想做嘅嘢去分配預算。3D 工作對硬件嘅需求係「分段式」嘅。</p>
+            </div>
+            <div class="chart-container">
+                <canvas id="hardwareROIChart"></canvas>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+                <div class="card p-6">
+                    <h3 class="font-bold text-brandPrimary mb-2">Modeling 建模期</h3>
+                    <p class="text-sm text-gray-600">主要吃 CPU 單核性能。如果你建模覺得 Lag，通常係因為 CPU 單核唔夠勁或者 RAM 爆咗。</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-brandPrimary mb-2">Rendering 算圖期</h3>
+                    <p class="text-sm text-gray-600">主要吃 GPU CUDA/Optix 核心。NVIDIA 顯示卡喺呢個階段係絕對領先，RTX 系列係標配。</p>
+                </div>
+                <div class="card p-6">
+                    <h3 class="font-bold text-brandPrimary mb-2">Simulation 模擬期</h3>
+                    <p class="text-sm text-gray-600">流體、布料模擬極度依賴 CPU 多核同大量高速 RAM。呢部分係最貴嘅。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: The Core Workflow (Interactive) -->
+        <section class="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-gray-100">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold mb-4">🛠️ Blender 核心工作流</h2>
+                <p class="text-brandSecondary">所有教學都會失效，但製作 3D 作品嘅「底層 Pipeline」係永遠唔會變嘅。</p>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-2 mb-10">
+                <button onclick="showTab('step1')" id="btn-step1" class="tab-btn px-6 py-2 rounded-full border-2 border-gray-100 font-bold transition-all step-active">1. 幾何建模</button>
+                <button onclick="showTab('step2')" id="btn-step2" class="tab-btn px-6 py-2 rounded-full border-2 border-gray-100 font-bold transition-all">2. 節點材質</button>
+                <button onclick="showTab('step3')" id="btn-step3" class="tab-btn px-6 py-2 rounded-full border-2 border-gray-100 font-bold transition-all">3. 虛擬打光</button>
+                <button onclick="showTab('step4')" id="btn-step4" class="tab-btn px-6 py-2 rounded-full border-2 border-gray-100 font-bold transition-all">4. 物理算圖</button>
+            </div>
+
+            <div class="min-h-[300px]">
+                <div id="step1" class="tab-content active text-center">
+                    <div class="text-6xl mb-6">📐</div>
+                    <h3 class="text-2xl font-bold mb-4">幾何數據 (Geometry)</h3>
+                    <p class="text-brandSecondary max-w-2xl mx-auto">
+                        一切嘅基礎。喺 Blender 4.x 中，你要掌握 <strong>Polygon Modeling</strong> 同 <strong>Geometry Nodes</strong>。前者係手動操作，後者係程序化生成。記住：保持拓撲 (Topology) 乾淨比細節更重要。
+                    </p>
+                </div>
+                <div id="step2" class="tab-content text-center">
+                    <div class="text-6xl mb-6">🎨</div>
+                    <h3 class="text-2xl font-bold mb-4">著色器 (Shading)</h3>
+                    <p class="text-brandSecondary max-w-2xl mx-auto">
+                        透過 Node Editor 連結唔同嘅運算器。理解 <strong>PBR (Physically Based Rendering)</strong> 原理，你就唔洗死記硬背邊個制打邊個制，而係知道點樣模擬真實世界的反光與折射。
+                    </p>
+                </div>
+                <div id="step3" class="tab-content text-center">
+                    <div class="text-6xl mb-6">🔦</div>
+                    <h3 class="text-2xl font-bold mb-4">光影佈局 (Lighting)</h3>
+                    <p class="text-brandSecondary max-w-2xl mx-auto">
+                        如果你覺得作品「假」，90% 係因為光影。掌握「三點打光」同「HDRI」嘅運用。Blender 4.2 嘅 AgX 色彩管理系統會幫你處理過曝嘅問題，令暗部細節更有層次。
+                    </p>
+                </div>
+                <div id="step4" class="tab-content text-center">
+                    <div class="text-6xl mb-6">🖼️</div>
+                    <h3 class="text-2xl font-bold mb-4">最終算圖 (Rendering)</h3>
+                    <p class="text-brandSecondary max-w-2xl mx-auto">
+                        選用 <strong>Cycles</strong> (真實) 還是 <strong>Eevee Next</strong> (極速)。了解採樣數 (Samples) 與去噪 (Denoise) 嘅平衡點。呢個階段係測試你耐性同電腦風扇轉速嘅時候。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Learning Curves -->
+        <section>
+            <div class="flex flex-col lg:flex-row gap-12 items-center">
+                <div class="lg:w-1/2">
+                    <h2 class="text-3xl font-bold mb-6">📉 學習曲線與心理防線</h2>
+                    <p class="text-brandSecondary mb-6">
+                        好多新手喺第一週就放棄。呢張圖顯示咗典型嘅學習過程。重點係跨過第一個月嘅「操作地獄期」。
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                            <span class="text-2xl">🔴</span>
+                            <div>
+                                <h4 class="font-bold">快捷鍵焦慮</h4>
+                                <p class="text-sm text-gray-600">Blender 係一隻要用兩隻手玩嘅軟體。左手長期放喺鍵盤，右手滑鼠。唔好諗住用 Menu 搵指令。</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+                            <span class="text-2xl">🟡</span>
+                            <div>
+                                <h4 class="font-bold">介面迷失</h4>
+                                <p class="text-sm text-gray-600">Blender 嘅 Workspace 好強大但好複雜。建議初期只保留 Layout, Modeling 同 Shading 呢三個 Tab。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="lg:w-1/2 w-full">
+                    <div class="chart-container">
+                        <canvas id="learningCurveChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Critical Survival Checklist -->
+        <section class="bg-brandSecondary text-white rounded-3xl p-8 md:p-12">
+            <h2 class="text-3xl font-bold mb-8 text-center">🚫 新手避坑清單 (Survival Checklist)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-brandPrimary flex items-center justify-center font-bold">1</div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">唔好跟舊版教學 (2.8 以前)</h4>
+                        <p class="text-gray-400 text-sm italic">原因：快捷鍵同界面邏輯大改，睇完只會令你更混亂。優先搵標註 "4.x" 嘅內容。</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-brandPrimary flex items-center justify-center font-bold">2</div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">一定要開「自動儲存」</h4>
+                        <p class="text-gray-400 text-sm italic">原因：Blender 雖然穩，但當你玩流體或者幾萬個面嘅時候，隨時會 Crash 到你懷疑人生。</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-brandPrimary flex items-center justify-center font-bold">3</div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">模型要記得「Apply Scale」</h4>
+                        <p class="text-gray-400 text-sm italic">原因：呢個係 90% 物理模擬同材質拉伸報錯嘅元兇。Ctrl+A 係你最好嘅朋友。</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-brandPrimary flex items-center justify-center font-bold">4</div>
+                    <div>
+                        <h4 class="font-bold text-lg mb-2">唔好一開波就玩「人物雕刻」</h4>
+                        <p class="text-gray-400 text-sm italic">原因：雕刻需要極強嘅解剖學知識。先從硬表面 (Hard Surface) 建模開始建立自信。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-24 pt-12 border-t border-gray-200 text-center">
+        <p class="text-brandSecondary font-bold">數據驅動 ‧ 底層思維 ‧ 拒絕過時資訊</p>
+        <p class="text-gray-400 text-xs mt-2">© 2026 智囊團內部文檔 - Blender 4.x 專用</p>
+    </footer>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('step-active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            document.getElementById('btn-' + tabId).classList.add('step-active');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Hardware ROI Chart
+            const ctxHW = document.getElementById('hardwareROIChart').getContext('2d');
+            new Chart(ctxHW, {
+                type: 'bar',
+                data: {
+                    labels: ['處理器 (CPU)', '顯示卡 (GPU)', '隨機記憶體 (RAM)', '固態硬碟 (SSD)'],
+                    datasets: [{
+                        label: '對工作效率嘅影響權重 (%)',
+                        data: [75, 95, 60, 40],
+                        backgroundColor: '#FF6B35',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100 }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+
+            // Learning Curve Chart
+            const ctxLC = document.getElementById('learningCurveChart').getContext('2d');
+            new Chart(ctxLC, {
+                type: 'line',
+                data: {
+                    labels: ['第1週', '第2週', '第1個月', '第3個月', '半年'],
+                    datasets: [
+                        {
+                            label: '掌握度 (%)',
+                            data: [5, 10, 25, 60, 85],
+                            borderColor: '#FF6B35',
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: '挫敗感 (Crash/Bug)',
+                            data: [90, 80, 50, 30, 15],
+                            borderColor: '#4E596F',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender 4.x 4.0: 空間計算與元引擎戰略</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        void: '#050505',
+                        electric: '#8B5CF6',
+                        cyanNeon: '#06B6D4',
+                        ash: '#1F2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: #FFFFFF; font-family: 'SF Pro Display', system-ui, sans-serif; }
+        .neon-glow { box-shadow: 0 0 15px rgba(139, 92, 246, 0.5); }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .gradient-text { background: linear-gradient(90deg, #8B5CF6, #06B6D4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+</head>
+<body class="p-6">
+
+    <!-- Hero Section -->
+    <header class="max-w-7xl mx-auto py-20 px-4">
+        <div class="flex items-center gap-4 mb-6">
+            <div class="h-1 w-12 bg-electric"></div>
+            <span class="text-electric font-mono tracking-widest text-sm uppercase">Phase 4.0: The Meta-Engine</span>
+        </div>
+        <h1 class="text-6xl md:text-8xl font-black mb-8 leading-tight">
+            構建<span class="gradient-text">虛擬現實</span>的最終管線
+        </h1>
+        <p class="text-gray-400 text-xl max-w-3xl leading-relaxed">
+            當創作不再侷限於 2D 螢幕。4.0 階段要求你掌握實時反饋與空間交互，將 Blender 推向作為空間計算（Spatial Computing）的核心生產力工具。
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto space-y-24">
+
+        <!-- Section 1: Real-time Compositor -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="space-y-8">
+                <h2 class="text-4xl font-bold">⏱️ 實時合成：零等待工作流</h2>
+                <p class="text-gray-400">
+                    Blender 4.3+ 引入了強大的 **Real-time Compositor**。這意味著你可以在 Viewport 直接看到後期處理的結果（如 Bloom, Color Grading, Lens Distortion），不再需要算圖後才發現問題。
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="glass p-6 rounded-2xl">
+                        <div class="text-cyanNeon text-3xl font-bold mb-2">0ms</div>
+                        <p class="text-xs text-gray-500 uppercase">反饋延遲</p>
+                    </div>
+                    <div class="glass p-6 rounded-2xl">
+                        <div class="text-electric text-3xl font-bold mb-2">GPU</div>
+                        <p class="text-xs text-gray-500 uppercase">加速核心</p>
+                    </div>
+                </div>
+            </div>
+            <div class="glass p-8 rounded-3xl neon-glow">
+                <canvas id="latencyChart" height="300"></canvas>
+            </div>
+        </section>
+
+        <!-- Section 2: Spatial Computing / VR Inspecting -->
+        <section class="bg-gradient-to-br from-ash to-void p-12 rounded-[3rem] border border-white/5">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">🥽 空間計算導入</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">使用 VR 進行場景審閱，不再受限於 2D 顯示器的深度誤差。</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center space-y-4">
+                    <div class="w-16 h-16 bg-electric/20 rounded-full flex items-center justify-center mx-auto text-electric text-2xl">📡</div>
+                    <h3 class="text-xl font-bold">XR Inspection</h3>
+                    <p class="text-sm text-gray-400">戴上 VR 頭顯，在 Blender 視圖內直接行走，確認比例與尺度感。</p>
+                </div>
+                <div class="text-center space-y-4">
+                    <div class="w-16 h-16 bg-cyanNeon/20 rounded-full flex items-center justify-center mx-auto text-cyanNeon text-2xl">🏗️</div>
+                    <h3 class="text-xl font-bold">Digital Twin</h3>
+                    <p class="text-sm text-gray-400">為現實世界建立精確的物理模型，並導入現實的光照與物理係數。</p>
+                </div>
+                <div class="text-center space-y-4">
+                    <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto text-white text-2xl">🔗</div>
+                    <h3 class="text-xl font-bold">Live Link</h3>
+                    <p class="text-sm text-gray-400">與 NVIDIA Omniverse 或 Unreal Engine 5 實時同步，達成極致協作。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Strategic Allocation Matrix -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+            <div class="glass p-10 rounded-3xl">
+                <h3 class="text-2xl font-bold mb-8 text-electric">4.0 資源分配矩陣</h3>
+                <canvas id="resourceMatrix" height="400"></canvas>
+            </div>
+            <div class="flex flex-col justify-center space-y-10">
+                <div class="border-l-4 border-electric pl-6">
+                    <h4 class="text-xl font-bold mb-2 text-cyanNeon">Headless Rendering (無頭渲染)</h4>
+                    <p class="text-gray-400">學習在 Linux 伺服器上不開 GUI 直接運行 Blender Python，進行自動化批量渲染。</p>
+                </div>
+                <div class="border-l-4 border-white/20 pl-6">
+                    <h4 class="text-xl font-bold mb-2">Vulkan Back-end</h4>
+                    <p class="text-gray-400">優化渲染底層，確保在不同平台上（如 Mac Metal 或 PC Vulkan）的一致效能表現。</p>
+                </div>
+                <div class="border-l-4 border-white/20 pl-6">
+                    <h4 class="text-xl font-bold mb-2">Geometry Nodes 2.0 (Simulation)</h4>
+                    <p class="text-gray-400">利用節點模擬複雜的粒子與物理現象，達成程序化世界生成的終極目標。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: The Final Mindset -->
+        <section class="py-24 text-center">
+            <h2 class="text-5xl font-black mb-12">未來已至，只是分布不均</h2>
+            <div class="max-w-3xl mx-auto glass p-12 rounded-[2rem] border-electric/30">
+                <p class="text-xl italic text-gray-300 leading-relaxed">
+                    「在 4.0 階段，你不再是為了『一張圖片』而創作。你是為了『一個可能性』、為了一個可以交互、可以感知、具備物理邏輯的虛擬實體而創作。」
+                </p>
+                <div class="mt-8 text-electric font-bold">— 策略顧問 4.0 結語</div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-20 border-t border-white/5 text-center text-gray-600">
+        <p>Blender 4.x 數位世界構建 4.0 | 2026 高階策略專修</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Latency Comparison Chart
+            const ctxLatency = document.getElementById('latencyChart').getContext('2d');
+            new Chart(ctxLatency, {
+                type: 'line',
+                data: {
+                    labels: ['3.x 舊版', '4.x 傳統合成', '4.3 實時合成', '4.3+ Vulkan 加速'],
+                    datasets: [{
+                        label: '反饋延遲 (ms)',
+                        data: [1500, 800, 30, 10],
+                        borderColor: '#8B5CF6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 4,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#06B6D4'
+                    }]
+                },
+                options: {
+                    plugins: { 
+                        legend: { labels: { color: '#FFFFFF' } },
+                        tooltip: { backgroundColor: '#1F2937', titleColor: '#8B5CF6', bodyColor: '#FFFFFF' }
+                    },
+                    scales: {
+                        y: { ticks: { color: '#6B7280' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#6B7280' }, grid: { display: false } }
+                    }
+                }
+            });
+
+            // Resource Matrix Radar Chart
+            const ctxMatrix = document.getElementById('resourceMatrix').getContext('2d');
+            new Chart(ctxMatrix, {
+                type: 'radar',
+                data: {
+                    labels: ['程序化邏輯 (GN)', '實時渲染技術', '空間感 (XR)', '自動化代碼 (Python)', '物理精確度'],
+                    datasets: [{
+                        label: '4.0 專家畫像',
+                        data: [95, 90, 85, 80, 88],
+                        borderColor: '#06B6D4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                        pointBorderColor: '#FFFFFF'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(255,255,255,0.1)' },
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            pointLabels: { color: '#9CA3AF', font: { size: 12 } },
+                            ticks: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

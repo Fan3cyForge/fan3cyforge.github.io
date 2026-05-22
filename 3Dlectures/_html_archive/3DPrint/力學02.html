@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學 Vol.2：進階應力與動態控制</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: auto; height: 300px; max-height: 400px; }
+        .tab-btn.active { background-color: #0f172a; color: white; border-color: #0f172a; }
+        .tab-content { display: none; animation: slideUp 0.4s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Interactive Animation for Warping */
+        .plate { height: 10px; background: #94a3b8; width: 200px; transition: all 0.5s ease; border-radius: 2px; }
+        .warped { border-radius: 20px 20px 2px 2px; transform: scaleX(0.9); }
+        
+        /* Resonance Visualizer */
+        .ghosting-box { border-left: 2px solid #0f172a; position: relative; }
+        .ghost-line { position: absolute; top: 0; bottom: 0; width: 1px; background: #cbd5e1; opacity: 0.5; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Chosen Palette: Slate & Blue-Gray (Engineering Professional) with Indigo accents. -->
+    
+    <!-- Application Structure Plan: 
+         Structure: Chapter-based Interactive Dashboard. 
+         Reasoning: Vol.2 deals with "Internal Forces" and "Machine Dynamics". These are more abstract, so I've used visual toggles and dynamic charts to visualize hidden stresses (like Hoop Stress) and machine vibrations (Resonance).
+         User Flow: Dashboard -> Advanced Concept Selector -> Interactive Simulation -> Design Guideline. 
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Hoop Stress: Interactive Bar Chart showing orientation strength vs internal pressure.
+         2. Thermal Warping: Visual Toggle simulation showing how infill/cooling causes bed lift.
+         3. Living Hinges: Step-progress visual for bending fatigue limits.
+         4. Resonance: Line Chart showing frequency interference (Ghosting).
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="max-w-6xl mx-auto px-6 py-10">
+        
+        <header class="mb-12 border-l-8 border-indigo-600 pl-6">
+            <h1 class="text-4xl font-black text-slate-900 tracking-tighter uppercase">3D Printing Physics <span class="text-indigo-600">Vol.2</span></h1>
+            <p class="text-slate-500 mt-2 text-lg">進階研究：內應力分析、熱力學對抗與動態打印物理</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex flex-wrap gap-3 mb-10">
+            <button class="tab-btn active px-6 py-2 rounded-full border border-slate-300 text-sm font-bold transition-all" data-target="hoop">環向應力 (Hoop Stress)</button>
+            <button class="tab-btn px-6 py-2 rounded-full border border-slate-300 text-sm font-bold transition-all" data-target="thermal">熱應力與翹曲 (Warping)</button>
+            <button class="tab-btn px-6 py-2 rounded-full border border-slate-300 text-sm font-bold transition-all" data-target="hinge">活動折頁 (Living Hinge)</button>
+            <button class="tab-btn px-6 py-2 rounded-full border border-slate-300 text-sm font-bold transition-all" data-target="resonance">動態共振 (Resonance)</button>
+        </nav>
+
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Content Panel -->
+            <div class="lg:col-span-8 bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+                
+                <!-- Section: Hoop Stress -->
+                <section id="hoop" class="tab-content active">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">環向應力：點解你件嘢會「爆口」？</h2>
+                    <p class="text-slate-600 mb-6">當你印一個水管接頭或者壓力容器時，內部壓力會向四周推。如果你的層線（Layer lines）是垂直於壓力方向，環向應力會直接嘗試撕開層間結合。這就是為什麼許多 3D 打印的管道組件在受壓時會沿著圓周裂開。</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">壓力耐受度預測 (MPa)</h3>
+                            <div class="chart-container">
+                                <canvas id="hoopChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="flex flex-col justify-center">
+                            <h4 class="font-bold text-indigo-600 mb-2">設計補救措施：</h4>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="bg-white p-3 rounded shadow-sm border-l-4 border-indigo-400"><strong>45度列印：</strong> 旋轉模型使層線交錯。</li>
+                                <li class="bg-white p-3 rounded shadow-sm border-l-4 border-indigo-400"><strong>增加外壁數 (Perimeters)：</strong> 增加外牆比增加填充 (Infill) 對抗環向應力更有效。</li>
+                                <li class="bg-white p-3 rounded shadow-sm border-l-4 border-indigo-400"><strong>過度擠出 (Over-extrusion)：</strong> 略微增加流量以強化層間熔合。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Thermal Warping -->
+                <section id="thermal" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">熱力學對抗：翹曲的物理真相</h2>
+                    <p class="text-slate-600 mb-6">3D 打印是材料「受熱膨脹、冷卻收縮」的過程。當上層冷卻時，它會收縮並拉扯下層。如果這種拉力大於零件與熱床的黏附力，邊角就會彈起。這在印大型、長條型零件時尤為嚴重。</p>
+                    
+                    <div class="bg-slate-900 rounded-xl p-10 flex flex-col items-center mb-8">
+                        <div id="warping-sim" class="plate mb-10 shadow-[0_0_20px_rgba(255,255,255,0.1)]"></div>
+                        <div class="flex gap-4">
+                            <button onclick="simulateWarp(false)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold">加熱環境 (減少翹曲)</button>
+                            <button onclick="simulateWarp(true)" class="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded text-sm font-bold">強制風冷 (嚴重翹曲)</button>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4 text-sm">
+                        <div class="p-4 border border-slate-200 rounded-lg">
+                            <span class="font-bold block mb-1">物理變量 A: 材料收縮率</span>
+                            <p class="text-slate-500">ABS (1.5%) > PETG (0.5%) > PLA (0.2%)</p>
+                        </div>
+                        <div class="p-4 border border-slate-200 rounded-lg">
+                            <span class="font-bold block mb-1">物理變量 B: 內部張力</span>
+                            <p class="text-slate-500">高填充率會積聚更多收縮拉力，反而更容易翹曲。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Living Hinge -->
+                <section id="hinge" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">活動折頁：利用聚合物的延展性</h2>
+                    <p class="text-slate-600 mb-6">利用 FDM 的各向異性（Anisotropy），我們可以印出只有 0.4 - 0.8mm 厚度的薄層，使其在垂直於層線的方向具備極高的彎曲疲勞壽命。這就是所謂的「Living Hinge」。</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="space-y-4">
+                            <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                                <h4 class="font-bold text-indigo-900">黃金參數：</h4>
+                                <ul class="list-disc list-inside text-sm text-indigo-800 mt-2">
+                                    <li>厚度：2層 (約 0.48mm)</li>
+                                    <li>方向：線條必須跨過折線</li>
+                                    <li>材料：PP 或 PETG (PLA 太脆會斷)</li>
+                                </ul>
+                            </div>
+                            <p class="text-sm text-slate-500 italic">研究顯示，正確設計的 Living Hinge 可以承受超過 1,000 次重複彎曲而不產生應力裂紋。</p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                            <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase">材料彎曲壽命對比</h3>
+                            <div class="chart-container">
+                                <canvas id="hingeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Resonance -->
+                <section id="resonance" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-800">動態物理：打印機的震動與鬼影</h2>
+                    <p class="text-slate-600 mb-6">打印機噴頭移動時有動量（Momentum）。當突然改變方向時，機器框架會產生微細震動（Ringing / Ghosting）。這種物理現象會在零件表面留下像水波一樣的紋理。</p>
+                    
+                    <div class="relative bg-slate-50 p-8 border border-slate-200 rounded-xl mb-6">
+                        <div class="ghosting-box h-32 w-full flex items-center pl-4 bg-white overflow-hidden">
+                            <div id="resonance-indicator" class="font-black text-4xl text-slate-200 tracking-widest">GHOSTING EFFECT</div>
+                            <div class="ghost-line" style="left: 10px;"></div>
+                            <div class="ghost-line" style="left: 18px;"></div>
+                            <div class="ghost-line" style="left: 24px;"></div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <label class="text-xs font-bold text-slate-400 uppercase">模擬震動頻率 (加速與減速)</label>
+                            <input type="range" min="1" max="10" value="5" class="w-full mt-2 accent-indigo-600" id="resonance-slider">
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Side Insights Panel -->
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-indigo-900 text-white rounded-2xl p-6 shadow-lg">
+                    <h3 class="text-xl font-bold mb-4">🔴 核心警告</h3>
+                    <p class="text-indigo-100 text-sm leading-relaxed mb-4">作為工程師，唔好妄想用軟件校正嚟解決硬件物理漏洞。如果你件嘢設計得唔平衡，或者無視咗 Hoop Stress，你用再貴嘅打印機都係印件廢物出嚟。</p>
+                    <div class="text-xs text-indigo-300 border-t border-indigo-800 pt-4">
+                        * Input Shaping 只能減緩 Ghosting，唔能夠解決框架剛性不足。
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase mb-4">第 2 集：研究小結</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center font-bold">1</div>
+                            <p class="text-xs text-slate-600">外牆數量對結構強度的提升遠超填充率。</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center font-bold">2</div>
+                            <p class="text-xs text-slate-600">環閉空間冷卻不均是大型零件失敗的主因。</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center font-bold">3</div>
+                            <p class="text-xs text-slate-600">零件方向必須考慮應力向量，而非僅僅為了省支撐。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab Logic
+            const btns = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.target).classList.add('active');
+                });
+            });
+
+            // Hoop Stress Chart
+            const ctxHoop = document.getElementById('hoopChart').getContext('2d');
+            new Chart(ctxHoop, {
+                type: 'bar',
+                data: {
+                    labels: ['橫向打印', '垂直打印', '45度打印', '螺旋打印'],
+                    datasets: [{
+                        label: '抗爆破壓力 (PSI)',
+                        data: [45, 12, 38, 55],
+                        backgroundColor: ['#6366f1', '#94a3b8', '#818cf8', '#4338ca']
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            // Hinge Life Chart
+            const ctxHinge = document.getElementById('hingeChart').getContext('2d');
+            new Chart(ctxHinge, {
+                type: 'doughnut',
+                data: {
+                    labels: ['PP', 'PETG', 'PLA', 'ABS'],
+                    datasets: [{
+                        data: [5000, 1200, 5, 200],
+                        backgroundColor: ['#4ade80', '#60a5fa', '#f87171', '#fbbf24']
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        title: { display: true, text: '預期折疊次數' },
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Resonance Visualizer
+            const resSlider = document.getElementById('resonance-slider');
+            const resIndicator = document.getElementById('resonance-indicator');
+            resSlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                resIndicator.style.letterSpacing = `${val * 2}px`;
+                resIndicator.style.opacity = 1 - (val * 0.05);
+            });
+        });
+
+        function simulateWarp(doWarp) {
+            const plate = document.getElementById('warping-sim');
+            if(doWarp) {
+                plate.classList.add('warped');
+                plate.style.background = '#ef4444';
+            } else {
+                plate.classList.remove('warped');
+                plate.style.background = '#10b981';
+            }
+        }
+    </script>
+</body>
+</html>

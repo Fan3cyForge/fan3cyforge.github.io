@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender 4.x 入坑指南 2.0: 進階戰略</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        deepSpace: '#0F172A',
+                        neonBlue: '#38BDF8',
+                        neonRose: '#FB7185',
+                        slateLight: '#F8FAFC',
+                        nodeBg: '#1E293B'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0F172A; color: #F8FAFC; overflow-x: hidden; }
+        .glass-card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); border-radius: 1.5rem; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin: auto; height: 350px; }
+        .node-socket { width: 12px; height: 12px; border-radius: 50%; background: #38BDF8; display: inline-block; }
+        .tab-active { border-bottom: 4px solid #38BDF8; color: #38BDF8; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #38BDF8; border-radius: 10px; }
+    </style>
+</head>
+<body class="font-sans antialiased">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-deepSpace/80 backdrop-blur-md border-b border-white/10">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-neonBlue text-2xl">💠</span>
+                <span class="font-black tracking-tighter text-xl">BLENDER 2.0</span>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-bold uppercase tracking-widest">
+                <a href="#nodes" class="hover:text-neonBlue transition">Geometry Nodes</a>
+                <a href="#performance" class="hover:text-neonBlue transition">效能管理</a>
+                <a href="#sim" class="hover:text-neonBlue transition">物理模擬</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="pt-32 pb-20 px-6 text-center">
+        <h1 class="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-neonBlue to-purple-500 bg-clip-text text-transparent">
+            超越基礎，掌握程序化力量
+        </h1>
+        <p class="text-slate-400 max-w-3xl mx-auto text-lg md:text-xl leading-relaxed">
+            2.0 指南唔教你點樣整杯子，而係教你點樣整出「一萬個隨機生成的杯子」。<br>
+            挑戰 4.x 最核心嘅 **Geometry Nodes** 同 **大型場景優化戰略**。
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 space-y-32 pb-24">
+
+        <!-- Section 1: The Geometry Nodes Logic -->
+        <section id="nodes" class="scroll-mt-24">
+            <div class="mb-12">
+                <h2 class="text-4xl font-bold mb-4">🧠 程序化建模：Geometry Nodes</h2>
+                <p class="text-slate-400 text-lg">
+                    傳統建模係「結果」，GN 係「過程」。掌握佢，你就可以實現代碼般嘅創作自由。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div class="glass-card p-8 space-y-6">
+                    <h3 class="text-2xl font-bold text-neonBlue">節點邏輯拆解</h3>
+                    <div class="space-y-4">
+                        <div class="bg-nodeBg p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="node-socket"></span>
+                                <span class="font-mono text-sm">Mesh Line</span>
+                            </div>
+                            <span class="text-xs text-slate-500">輸入</span>
+                        </div>
+                        <div class="text-center text-neonBlue">⬇️</div>
+                        <div class="bg-nodeBg p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="node-socket" style="background: #A78BFA;"></span>
+                                <span class="font-mono text-sm">Instance on Points</span>
+                            </div>
+                            <span class="text-xs text-slate-500">處理</span>
+                        </div>
+                        <div class="text-center text-neonBlue">⬇️</div>
+                        <div class="bg-nodeBg p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="node-socket" style="background: #F472B6;"></span>
+                                <span class="font-mono text-sm">Set Material</span>
+                            </div>
+                            <span class="text-xs text-slate-500">輸出</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-400 italic">
+                        🔴 低把握建議：初學者最易喺「屬性轉移 (Attribute)」卡關，建議由 Instance On Points 開始玩。
+                    </p>
+                </div>
+                <div class="flex flex-col justify-center">
+                    <h4 class="text-xl font-bold mb-4">點解要學 GN？</h4>
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <span class="text-neonBlue">✔</span>
+                            <span><strong>非破壞性：</strong> 隨時更改參數，模型即時更新。</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-neonBlue">✔</span>
+                            <span><strong>大規模分佈：</strong> 輕鬆生成成千上萬嘅植被、石頭或城市建築。</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="text-neonBlue">✔</span>
+                            <span><strong>物理聯動：</strong> 令模型可以根據距離、高度或重量動態變形。</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Performance Management (Chart.js) -->
+        <section id="performance" class="scroll-mt-24">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">⚡ 大型場景效能管理</h2>
+                <p class="text-slate-400">當頂點 (Vertices) 過百萬，如果你唔識優化，RTX 4090 都會變幻燈片。</p>
+            </div>
+
+            <div class="chart-container glass-card p-6">
+                <canvas id="performanceChart"></canvas>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+                <div class="p-6 border-l-2 border-neonBlue bg-white/5">
+                    <h4 class="font-bold mb-2">Instance (實例化)</h4>
+                    <p class="text-xs text-slate-400">重複物件唔好直接 Copy，用 Alt+D 或者 GN Instance，節省 90% 顯存。</p>
+                </div>
+                <div class="p-6 border-l-2 border-neonBlue bg-white/5">
+                    <h4 class="font-bold mb-2">LOD (細節層次)</h4>
+                    <p class="text-xs text-slate-400">遠處物件用低面數模型，甚至用平面圖片替代。</p>
+                </div>
+                <div class="p-6 border-l-2 border-neonBlue bg-white/5">
+                    <h4 class="font-bold mb-2">Texture Packing</h4>
+                    <p class="text-xs text-slate-400">貼圖唔好盲目追求 8K，4K 已經係大多數場景嘅極限。</p>
+                </div>
+                <div class="p-6 border-l-2 border-neonBlue bg-white/5">
+                    <h4 class="font-bold mb-2">Culling (剔除)</h4>
+                    <p class="text-xs text-slate-400">鏡頭睇唔到嘅嘢，一律隱藏或刪除。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Physics & Simulation -->
+        <section id="sim" class="scroll-mt-24">
+            <div class="flex flex-col lg:flex-row gap-12">
+                <div class="lg:w-1/3">
+                    <h2 class="text-4xl font-bold mb-6">🌪️ 物理模擬：真實嘅代價</h2>
+                    <p class="text-slate-400 mb-8">
+                        物理模擬係 Blender 4.x 最易「玩死」電腦嘅部分。理解呢個分佈圖，你就會明白點解你嘅模擬會失敗。
+                    </p>
+                    <div class="p-6 glass-card border-neonRose/30">
+                        <h4 class="text-neonRose font-bold mb-2">⚠️ 警告</h4>
+                        <p class="text-sm">
+                            唔好喺未做「Bake (烘焙)」之前就嘗試播放複雜流體。建議先用低解析度測試路徑，確認無誤再加細節。
+                        </p>
+                    </div>
+                </div>
+                <div class="lg:w-2/3 glass-card p-8">
+                    <div class="chart-container">
+                        <canvas id="simFailChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Final Mastery -->
+        <section class="py-20 text-center glass-card border-neonBlue/20">
+            <h2 class="text-4xl font-bold mb-8">下一步：建立你嘅專業 Asset Library</h2>
+            <p class="text-slate-400 max-w-2xl mx-auto mb-12">
+                高手同新手嘅分別，喺於高手擁有自己嘅「軍火庫」。<br>
+                將你做過嘅好材質、好模型全部標記為 Asset，下次創作時直接拖曳使用。
+            </p>
+            <div class="flex justify-center gap-6">
+                <button onclick="window.scrollTo(0,0)" class="bg-neonBlue text-deepSpace font-bold py-3 px-8 rounded-full hover:scale-105 transition">
+                    返回頂部 🚀
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="py-12 border-t border-white/5 text-center text-slate-500 text-sm">
+        <p>Blender 4.x 進略指南 v2.0 | 2026 戰略顧問專供</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Performance Chart: Vertex Count vs FPS
+            const ctxPerf = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctxPerf, {
+                type: 'line',
+                data: {
+                    labels: ['1萬', '10萬', '50萬', '100萬', '500萬', '1000萬'],
+                    datasets: [{
+                        label: '實時預覽 FPS (未優化)',
+                        data: [120, 90, 45, 15, 2, 0.5],
+                        borderColor: '#FB7185',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#FB7185',
+                        tension: 0.3
+                    }, {
+                        label: '實時預覽 FPS (優化後/Instance)',
+                        data: [120, 115, 95, 80, 60, 45],
+                        borderColor: '#38BDF8',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#38BDF8',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#F8FAFC' } },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'FPS', color: '#F8FAFC' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94A3B8' }
+                        },
+                        x: { 
+                            title: { display: true, text: '頂點數量 (Vertices)', color: '#F8FAFC' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#94A3B8' }
+                        }
+                    }
+                }
+            });
+
+            // Simulation Failure Reasons Pie Chart
+            const ctxSim = document.getElementById('simFailChart').getContext('2d');
+            new Chart(ctxSim, {
+                type: 'pie',
+                data: {
+                    labels: ['尺度問題 (Scale 不對)', '採樣步數不足 (Steps)', '碰撞邊界錯誤', '緩存路徑失效', 'RAM 溢出'],
+                    datasets: [{
+                        data: [40, 25, 15, 12, 8],
+                        backgroundColor: [
+                            '#38BDF8', 
+                            '#818CF8', 
+                            '#A78BFA', 
+                            '#F472B6', 
+                            '#FB7185'
+                        ],
+                        hoverOffset: 20
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            position: 'right',
+                            labels: { color: '#F8FAFC', font: { size: 14 } }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,742 @@
+/* Fan³cy Forge — 全域品牌（Data-driven 教學容器共用） */
+:root {
+    --f3f-bg: #0d1117;
+    --f3f-cyan: #00f2ff;
+    --f3f-pink: #ff00e5;
+    --f3f-orange: #ff8c00;
+    --f3f-text: #e6edf3;
+
+    /* 圖片路徑變數 - 方便日後維護 */
+    --f3f-hero-url: url('../images/branding/hero-bg.webp');
+
+    /* 延伸／相容舊變數名 */
+    --f3f-white: var(--f3f-text);
+    --f3f-blue: var(--f3f-cyan);
+    --f3f-glass: rgba(13, 17, 23, 0.85); /* 稍微加深透明度，提升文字可讀性 */
+    --f3f-border: rgba(0, 242, 255, 0.28);
+    --f3f-text-muted: rgba(230, 237, 243, 0.65);
+    --f3f-pink-soft: rgba(255, 0, 229, 0.35);
+    --f3f-pink-deep: #c400b5;
+}
+
+/* ---------- Hero：賽博靈魂漂浮 ---------- */
+@keyframes f3f-float-y {
+    0%,
+    100% {
+        transform: translateY(0) rotate(-0.3deg);
+    }
+    50% {
+        transform: translateY(-12px) rotate(0.3deg);
+    }
+}
+
+@keyframes f3f-float-y-alt {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0.25deg);
+    }
+    50% {
+        transform: translateY(-10px) rotate(-0.25deg);
+    }
+}
+
+@keyframes f3f-cyber-pulse {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 14px rgba(0, 242, 255, 0.35))
+            drop-shadow(0 0 28px rgba(255, 0, 229, 0.2));
+    }
+    50% {
+        filter: drop-shadow(0 0 22px rgba(0, 242, 255, 0.55))
+            drop-shadow(0 0 40px rgba(255, 0, 229, 0.35));
+    }
+}
+
+.f3f-hero-stage {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(8px, 3vw, 28px);
+    margin: 10vh 0 8px;
+    flex-wrap: wrap;
+}
+
+.f3f-hero-float {
+    flex: 0 0 auto;
+    width: min(120px, 22vw);
+    max-width: 140px;
+    height: auto;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+}
+
+.f3f-hero-float--left {
+    margin-left: 50px;
+    animation: f3f-float-y 4.2s ease-in-out infinite, f3f-cyber-pulse 5.5s ease-in-out infinite;
+}
+
+.f3f-hero-float--right {
+    margin-right: 50px;
+    animation: f3f-float-y-alt 3.8s ease-in-out infinite, f3f-cyber-pulse 6s ease-in-out infinite;
+    animation-delay: 0.4s, 0s;
+}
+
+.f3f-hero-center {
+    flex: 1 1 220px;
+    min-width: min(100%, 220px);
+    text-align: center;
+}
+
+.f3f-hero-logo-core {
+    width: min(200px, 42vw);
+    height: auto;
+    border-radius: 16px;
+    filter: drop-shadow(0 0 20px rgba(0, 242, 255, 0.5)) drop-shadow(0 0 36px rgba(255, 0, 229, 0.3));
+}
+
+/* 3D 預覽選擇列 */
+.f3f-mv-picker {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.15);
+    background: rgba(1, 4, 9, 0.92);
+}
+
+.f3f-mv-picker label {
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    color: var(--f3f-pink);
+    text-transform: uppercase;
+}
+
+.f3f-mv-picker select {
+    flex: 1 1 160px;
+    min-width: 140px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 242, 255, 0.35);
+    background: #010409;
+    color: var(--f3f-cyan);
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+/* ---------- 全站 Footer + Sticky WhatsApp ---------- */
+.f3f-site-footer {
+    margin-top: auto;
+    padding: 20px 16px 28px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--f3f-text-muted);
+    line-height: 1.6;
+}
+
+.f3f-site-footer a {
+    color: var(--f3f-cyan);
+    text-decoration: none;
+}
+
+.f3f-site-footer a:hover {
+    color: var(--f3f-pink);
+}
+
+.f3f-sticky-wa {
+    position: fixed;
+    z-index: 9999;
+    right: 18px;
+    bottom: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    border-radius: 12px;
+    border: 2px solid var(--f3f-pink);
+    background: rgba(1, 4, 9, 0.92);
+    color: var(--f3f-text) !important;
+    font-size: 0.88rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+    box-shadow:
+        0 0 12px rgba(255, 0, 229, 0.55),
+        0 0 28px rgba(255, 0, 229, 0.25),
+        0 0 40px rgba(0, 242, 255, 0.12);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.f3f-sticky-wa:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 18px rgba(255, 0, 229, 0.75),
+        0 0 36px rgba(255, 0, 229, 0.4),
+        0 0 48px rgba(0, 242, 255, 0.2);
+}
+
+@media (max-width: 768px) {
+    .f3f-sticky-wa {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: none;
+        border-radius: 0;
+        padding: 14px 16px;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        justify-content: center;
+    }
+}
+
+/* ---------- 參考圖片頁 Grid ---------- */
+.f3f-ref-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 20px 32px;
+    box-sizing: border-box;
+}
+
+.f3f-ref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.f3f-ref-grid a {
+    display: block;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 242, 255, 0.22);
+    background: rgba(1, 4, 9, 0.75);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.f3f-ref-grid a:hover {
+    border-color: rgba(255, 0, 229, 0.45);
+    box-shadow: 0 0 20px rgba(255, 0, 229, 0.15);
+}
+
+.f3f-ref-grid img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+}
+
+.f3f-ref-cta {
+    margin-top: 40px;
+    padding: 22px 20px;
+    text-align: center;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 0, 229, 0.28);
+    background: rgba(1, 4, 9, 0.65);
+    color: var(--f3f-text-muted);
+    line-height: 1.7;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.f3f-ref-cta .f3f-ref-cta-actions {
+    margin-top: 16px;
+}
+
+/* ---------- Neon Glow ---------- */
+.f3f-neon-title,
+.f3f-prose h1,
+#f3f-viewer-main.f3f-prose h1 {
+    color: var(--f3f-cyan) !important;
+    text-shadow:
+        0 0 6px rgba(0, 242, 255, 0.85),
+        0 0 20px rgba(0, 242, 255, 0.45),
+        0 0 36px rgba(0, 242, 255, 0.25);
+}
+
+.f3f-neon-btn {
+    color: var(--f3f-cyan) !important;
+    border-color: rgba(0, 242, 255, 0.55) !important;
+    text-shadow: 0 0 8px rgba(0, 242, 255, 0.7);
+    box-shadow:
+        0 0 12px rgba(0, 242, 255, 0.35),
+        inset 0 0 12px rgba(0, 242, 255, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.f3f-neon-btn:hover {
+    color: var(--f3f-text) !important;
+    border-color: var(--f3f-pink) !important;
+    text-shadow: 0 0 10px rgba(255, 0, 229, 0.85);
+    box-shadow:
+        0 0 18px rgba(255, 0, 229, 0.45),
+        0 0 28px rgba(0, 242, 255, 0.25);
+}
+
+/* ---------- 頁面底 ---------- */
+body.f3f-brand {
+    /* 
+       層疊背景邏輯：
+       1. 最上層：頂部青色發光 (Radial)
+       2. 中間層：半透明黑色遮罩 (Linear) - 確保背景圖唔會搶咗文字鏡
+       3. 最底層：你的 Hero Background 圖片
+    */
+    background: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 242, 255, 0.15), transparent),
+        linear-gradient(rgba(13, 17, 23, 0.75), rgba(13, 17, 23, 0.9)),
+        var(--f3f-hero-url);
+    
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* 捲動時背景固定，增加高級感 */
+    background-repeat: no-repeat;
+    
+    color: var(--f3f-text);
+    font-family: "JetBrains Mono", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    box-sizing: border-box;
+    /* 預留 Sticky CTA（手機全寬底欄）空間 */
+    padding-bottom: 96px;
+}
+
+@media (min-width: 768px) {
+    body.f3f-brand {
+        padding-bottom: 72px;
+    }
+}
+
+/* ---------- Prose：Markdown / Tailwind 覆寫 ---------- */
+.f3f-prose {
+    color: var(--f3f-text);
+    line-height: 1.7;
+}
+
+.f3f-prose h1 {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    margin-top: 0;
+    margin-bottom: 0.75em;
+    border-bottom: 1px solid rgba(0, 242, 255, 0.25);
+    padding-bottom: 0.35em;
+}
+
+.f3f-prose h2,
+.f3f-prose h3,
+.f3f-prose h4 {
+    color: var(--f3f-text);
+    margin-top: 1.25em;
+}
+
+.f3f-prose h2 {
+    color: var(--f3f-cyan);
+    text-shadow: 0 0 12px rgba(0, 242, 255, 0.35);
+}
+
+.f3f-prose a {
+    color: var(--f3f-pink);
+}
+
+.f3f-prose a:hover {
+    color: var(--f3f-orange);
+}
+
+/* 行內 code */
+.f3f-prose code {
+    background: rgba(13, 17, 23, 0.95) !important;
+    border: 1px solid rgba(255, 0, 229, 0.45) !important;
+    color: var(--f3f-cyan) !important;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.9em;
+}
+
+/* code 塊：深色底 + 粉邊 */
+.f3f-prose pre {
+    background: #010409 !important;
+    border: 1px solid rgba(255, 0, 229, 0.55) !important;
+    box-shadow: 0 0 18px rgba(255, 0, 229, 0.12);
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+.f3f-prose pre code {
+    background: transparent !important;
+    border: none !important;
+    color: var(--f3f-text) !important;
+    padding: 0 !important;
+    font-size: 0.88em;
+}
+
+.f3f-prose blockquote {
+    border-left: 4px solid var(--f3f-pink);
+    margin: 1em 0;
+    padding: 12px 14px 12px 16px;
+    color: var(--f3f-text-muted);
+    background: rgba(255, 0, 229, 0.06);
+    border-radius: 0 10px 10px 0;
+}
+
+/* 互動版提示（置頂 blockquote） */
+.f3f-prose blockquote:first-of-type {
+    border-left-width: 5px;
+    color: var(--f3f-text);
+}
+
+.f3f-prose blockquote:first-of-type a {
+    color: var(--f3f-pink);
+    font-weight: 600;
+}
+
+.f3f-prose img {
+    max-width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 242, 255, 0.25);
+}
+
+.f3f-prose table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.f3f-prose th,
+.f3f-prose td {
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    padding: 8px 10px;
+}
+
+/* ---------- 共用 shell / card ---------- */
+.f3f-shell {
+    max-width: 1100px;
+    margin: 0 auto;
+    border: 1px solid var(--f3f-border);
+    background: var(--f3f-glass);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.f3f-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--f3f-border);
+    background: rgba(1, 4, 9, 0.88);
+    color: var(--f3f-cyan);
+    text-decoration: none;
+    font-size: 0.92rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.f3f-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--f3f-pink);
+    box-shadow: 0 0 18px rgba(255, 0, 229, 0.35);
+}
+
+.f3f-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.f3f-card {
+    border: 1px solid rgba(255, 0, 229, 0.22);
+    border-radius: 10px;
+    background: rgba(1, 4, 9, 0.75);
+    padding: 14px 16px;
+}
+
+.f3f-card h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    color: var(--f3f-text);
+}
+
+.f3f-card a {
+    color: var(--f3f-cyan);
+    word-break: break-all;
+}
+
+.f3f-card small {
+    color: var(--f3f-text-muted);
+    display: block;
+    margin-top: 6px;
+    font-size: 0.82rem;
+}
+
+.f3f-accent {
+    color: var(--f3f-pink);
+}
+
+.f3f-muted {
+    color: var(--f3f-text-muted);
+}
+
+.f3f-bg-reveal {
+    background: none !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+/* ---------- 全站搜尋 ---------- */
+.f3f-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.f3f-search-section {
+    margin-top: 28px;
+    width: 100%;
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+.f3f-search-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.f3f-search-input {
+    flex: 1 1 220px;
+    min-width: 0;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--f3f-cyan);
+    background: rgba(1, 4, 9, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--f3f-text);
+    font: inherit;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    box-shadow:
+        0 0 14px rgba(0, 242, 255, 0.28),
+        0 0 32px rgba(0, 242, 255, 0.1),
+        inset 0 0 20px rgba(0, 242, 255, 0.04);
+    outline: none;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.f3f-search-input::placeholder {
+    color: var(--f3f-text-muted);
+}
+
+.f3f-search-input:focus {
+    border-color: var(--f3f-cyan);
+    box-shadow:
+        0 0 20px rgba(0, 242, 255, 0.45),
+        0 0 40px rgba(255, 0, 229, 0.12),
+        inset 0 0 24px rgba(0, 242, 255, 0.06);
+}
+
+.f3f-search-clear {
+    flex: 0 0 auto;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 12px;
+    border: 2px solid var(--f3f-cyan);
+    background: rgba(1, 4, 9, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--f3f-cyan);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    box-shadow:
+        0 0 12px rgba(0, 242, 255, 0.22),
+        inset 0 0 16px rgba(0, 242, 255, 0.05);
+    transition: box-shadow 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.f3f-search-clear:hover {
+    color: var(--f3f-text);
+    border-color: var(--f3f-pink);
+    box-shadow:
+        0 0 16px rgba(255, 0, 229, 0.35),
+        0 0 28px rgba(0, 242, 255, 0.15);
+}
+
+.f3f-search-empty {
+    margin: 14px 0 0;
+    text-align: center;
+    font-size: 0.92rem;
+    color: var(--f3f-pink);
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .f3f-search-row {
+        flex-direction: column;
+    }
+
+    .f3f-search-clear {
+        width: 100%;
+    }
+}
+
+/* ---------- Cyber Portal：文章網格 ---------- */
+#f3f-article-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+#f3f-article-grid a {
+    display: block;
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 242, 255, 0.22);
+    background: rgba(1, 4, 9, 0.75);
+    color: var(--f3f-cyan);
+    text-decoration: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#f3f-article-grid a:hover {
+    border-color: rgba(255, 0, 229, 0.45);
+    box-shadow: 0 0 20px rgba(255, 0, 229, 0.15);
+}
+
+#f3f-article-grid .sub {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--f3f-text-muted);
+    word-break: break-all;
+}
+
+/* ---------- Viewer 閱讀器（側欄 + 手機抽屜）---------- */
+.f3f-viewer-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 290px) 1fr;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+#f3f-sidebar {
+    background: rgba(1, 4, 9, 0.96);
+    border-right: 1px solid rgba(0, 242, 255, 0.2);
+    overflow: auto;
+    padding: 14px 10px 28px;
+}
+
+#f3f-sidebar > h2 {
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    color: var(--f3f-pink);
+    margin: 0 0 12px 8px;
+}
+
+.f3f-nav-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+body.f3f-viewer-nav-open .f3f-nav-backdrop {
+    display: block;
+}
+
+#f3f-nav-toggle.f3f-nav-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 600;
+}
+
+/* ---------- Mobile-first：≤768px ---------- */
+@media (max-width: 768px) {
+    body.f3f-brand {
+        background-attachment: scroll;
+    }
+
+    .f3f-hero-float--left,
+    .f3f-hero-float--right {
+        display: none;
+    }
+
+    .f3f-hero-stage {
+        flex-direction: column;
+        margin-top: 6vh;
+        margin-bottom: 4px;
+        gap: 12px;
+    }
+
+    .f3f-hero-center {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #f3f-article-grid,
+    .f3f-ref-grid,
+    .f3f-card-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .f3f-viewer-layout {
+        grid-template-columns: 1fr;
+    }
+
+    #f3f-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: min(300px, 88vw);
+        height: 100vh;
+        height: 100dvh;
+        max-height: none;
+        z-index: 2600;
+        transform: translateX(-100%);
+        transition: transform 0.22s ease;
+        border-right: 1px solid rgba(0, 242, 255, 0.22);
+        border-bottom: none;
+        box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+    }
+
+    body.f3f-viewer-nav-open #f3f-sidebar {
+        transform: translateX(0);
+    }
+
+    #f3f-nav-toggle.f3f-nav-toggle {
+        display: inline-flex;
+    }
+
+    body.f3f-viewer-nav-open {
+        overflow: hidden;
+    }
+}
+
+@media (min-width: 769px) {
+    .f3f-nav-backdrop {
+        display: none !important;
+    }
+}

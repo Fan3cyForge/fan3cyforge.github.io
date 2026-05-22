@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blender 3D 新手入門完全指南：三冊互動教學</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base styles and custom scrollbar for aesthetics */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #faf8f5; /* Warm neutral background */
+            color: #333333;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #d97706; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #b45309; }
+
+        /* Chart Container Styling Requirements */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px; /* Constrain max width */
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height */
+            max-height: 400px; /* Prevent vertical overflow */
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+
+        /* Interactive Element Styles */
+        .tab-btn { transition: all 0.3s ease; }
+        .tab-btn.active {
+            background-color: #ea580c; /* Tailwind orange-600 */
+            color: white;
+            border-bottom: 4px solid #9a3412;
+        }
+        
+        .shortcut-key {
+            display: inline-block;
+            background: #e5e5e5;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 0.2rem 0.5rem;
+            font-family: monospace;
+            font-weight: bold;
+            box-shadow: 0 2px 0 #bbb;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .shortcut-key:active {
+            transform: translateY(2px);
+            box-shadow: 0 0 0 #bbb;
+        }
+
+        /* 3D Axis visualization using CSS */
+        .axis-container { position: relative; width: 100px; height: 100px; margin: 0 auto; perspective: 300px; }
+        .axis { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom left; width: 3px; border-radius: 2px;}
+        .axis-z { height: 40px; background: #3b82f6; transform: rotateX(0deg); } /* Blue Z */
+        .axis-y { height: 40px; background: #10b981; transform: rotateX(90deg) rotateY(45deg); } /* Green Y */
+        .axis-x { height: 40px; background: #ef4444; transform: rotateZ(-90deg); } /* Red X */
+
+        /* Utility for hiding sections */
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Chosen Palette: Warm Neutrals & Blender Orange -->
+<!-- Background: #faf8f5 (Stone 50 approx) | Text: #333333 | Accents: #ea580c (Orange 600 - Blender brand color), #e5e7eb (Gray 200) -->
+
+<!-- Application Structure Plan: The SPA is structured as a tabbed interface representing the three volumes (上冊, 中冊, 下冊). This allows users to consume the learning material in logical chunks without being overwhelmed by a massive single scroll. 
+    1. Header: Title and overall progress.
+    2. Navigation: Tabs to switch volumes.
+    3. Content Areas: Each volume has its own section containing interactive text, CSS-based visual aids (to avoid SVG), and data visualizations (Chart.js) in Vol 3 to explain complex concepts like render engines.
+    This structure provides a clean, focused learning path. -->
+
+<!-- Visualization & Content Choices: 
+    - Vol 1 (Basics): Interactive "Cheat Sheet" buttons. Goal: Active recall of keyboard shortcuts. Method: HTML/CSS buttons that reveal info.
+    - Vol 2 (Modeling): Interactive Concept Toggles (Object vs Edit mode). Goal: Clarify conceptual differences. Method: JS-driven content swapping.
+    - Vol 3 (Rendering): 
+        - Radar Chart (Chart.js): Compare Eevee vs Cycles. Goal: Multi-variable comparison. Justification: Best way to show tradeoffs.
+        - Line Chart (Chart.js): Blender Learning Curve. Goal: Manage expectations. Justification: Shows progression over time.
+    - Icons/Graphics: CSS-styled elements and Unicode (&#9632;, &#128065;) used exclusively to ensure NO SVG/Mermaid. -->
+
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <!-- Header -->
+    <header class="bg-stone-900 text-white py-8 shadow-md">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight mb-2">
+                <span class="text-orange-500">&#9632;</span> Blender 3D 新手完全指南
+            </h1>
+            <p class="text-stone-300 text-lg">從零開始，掌握 3D 創作的開源神器</p>
+        </div>
+    </header>
+
+    <!-- Navigation (The 3 Volumes) -->
+    <nav class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-center space-x-1 md:space-x-4 py-2">
+                <button onclick="switchTab('vol1')" id="btn-vol1" class="tab-btn active px-4 py-3 rounded-t-md font-bold text-stone-600 hover:bg-orange-100 w-1/3 text-center">
+                    上冊：基礎與介面
+                </button>
+                <button onclick="switchTab('vol2')" id="btn-vol2" class="tab-btn px-4 py-3 rounded-t-md font-bold text-stone-600 hover:bg-orange-100 w-1/3 text-center">
+                    中冊：建模與材質
+                </button>
+                <button onclick="switchTab('vol3')" id="btn-vol3" class="tab-btn px-4 py-3 rounded-t-md font-bold text-stone-600 hover:bg-orange-100 w-1/3 text-center">
+                    下冊：燈光與算圖
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- ==================== VOL 1: BASICS ==================== -->
+        <section id="content-vol1" class="space-y-8 animate-fade-in">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-100 border-l-4 border-l-orange-500">
+                <h2 class="text-2xl font-bold mb-3 text-stone-800">上冊介紹：踏入 3D 世界的第一步</h2>
+                <p class="text-stone-600 leading-relaxed">
+                    本冊旨在幫助您克服初次打開 Blender 時的恐懼感。我們將專注於了解介面佈局、如何在 3D 空間中導航，以及最基礎的物件操作。Blender 是一個高度依賴快捷鍵的軟體，透過本章節的互動練習，您將建立肌肉記憶，這是提升工作效率的關鍵基石。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Navigation Concepts -->
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-bold mb-4 flex items-center"><span class="text-2xl mr-2">&#128065;</span> 視圖導航 (Navigation)</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="bg-stone-200 text-stone-800 px-2 py-1 rounded text-sm font-bold mr-3 mt-1">中鍵拖曳</span>
+                            <div>
+                                <p class="font-semibold">環繞視圖 (Orbit)</p>
+                                <p class="text-sm text-stone-500">圍繞著場景中心或所選物件旋轉視角。</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-stone-200 text-stone-800 px-2 py-1 rounded text-sm font-bold mr-3 mt-1">Shift + 中鍵</span>
+                            <div>
+                                <p class="font-semibold">平移視圖 (Pan)</p>
+                                <p class="text-sm text-stone-500">上下左右平移您的視角，不改變觀看角度。</p>
+                            </div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="bg-stone-200 text-stone-800 px-2 py-1 rounded text-sm font-bold mr-3 mt-1">滾輪</span>
+                            <div>
+                                <p class="font-semibold">縮放 (Zoom)</p>
+                                <p class="text-sm text-stone-500">拉近或推遠視圖。</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 3D Space Concept -->
+                <div class="bg-white p-6 rounded-lg shadow-sm flex flex-col items-center justify-center">
+                    <h3 class="text-xl font-bold mb-6 w-full text-left">認識 3D 座標軸</h3>
+                    <div class="axis-container mb-4">
+                        <div class="axis axis-z"></div>
+                        <div class="axis axis-y"></div>
+                        <div class="axis axis-x"></div>
+                    </div>
+                    <div class="flex space-x-4 text-sm font-bold">
+                        <span class="text-red-500">X 軸 (左右)</span>
+                        <span class="text-green-500">Y 軸 (前後)</span>
+                        <span class="text-blue-500">Z 軸 (上下)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Shortcut Practice -->
+            <div class="bg-stone-100 p-6 rounded-lg shadow-inner">
+                <h3 class="text-xl font-bold mb-4 text-center">核心操作快捷鍵 (互動練習)</h3>
+                <p class="text-center text-sm text-stone-500 mb-6">點擊下方按鍵查看功能說明</p>
+                
+                <div class="flex flex-wrap justify-center gap-4 mb-6">
+                    <div class="shortcut-key text-xl" onclick="showShortcutInfo('G')">G</div>
+                    <div class="shortcut-key text-xl" onclick="showShortcutInfo('R')">R</div>
+                    <div class="shortcut-key text-xl" onclick="showShortcutInfo('S')">S</div>
+                    <div class="shortcut-key text-xl" onclick="showShortcutInfo('X')">X</div>
+                </div>
+                
+                <div id="shortcut-display" class="bg-white p-4 rounded min-h-[100px] border border-stone-200 flex items-center justify-center text-center">
+                    <p class="text-stone-400">請點擊上方按鍵...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VOL 2: MODELING ==================== -->
+        <section id="content-vol2" class="space-y-8 hidden-section">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-100 border-l-4 border-l-orange-500">
+                <h2 class="text-2xl font-bold mb-3 text-stone-800">中冊介紹：從幾何體到具體形狀</h2>
+                <p class="text-stone-600 leading-relaxed">
+                    掌握了基礎操作後，中冊將帶您進入創造的核心：網格建模（Mesh Modeling）與材質賦予。您將學習如何透過編輯點、線、面來改變物體形狀，並了解 Blender 中最重要的兩個模式切換。最後，我們將觸及材質基礎，為模型增添顏色與質感。
+                </p>
+            </div>
+
+            <!-- Interactive Mode Toggle -->
+            <div class="bg-white p-6 rounded-lg shadow-sm text-center">
+                <h3 class="text-xl font-bold mb-4">核心概念：模式切換 (按 Tab 鍵)</h3>
+                <div class="flex justify-center mb-6 border-b border-stone-200">
+                    <button id="mode-obj-btn" onclick="toggleMode('object')" class="px-6 py-2 font-bold text-orange-600 border-b-2 border-orange-600">物體模式 (Object Mode)</button>
+                    <button id="mode-edit-btn" onclick="toggleMode('edit')" class="px-6 py-2 font-bold text-stone-400 hover:text-stone-600">編輯模式 (Edit Mode)</button>
+                </div>
+                
+                <div id="mode-obj-content" class="p-4 bg-stone-50 rounded">
+                    <p class="text-lg mb-2">&#9632; &#9650; &#9679;</p>
+                    <p class="font-bold text-stone-700">整體操作</p>
+                    <p class="text-sm text-stone-500">在此模式下，你選擇並操作整個物件。移動、旋轉、縮放會影響整個模型。</p>
+                </div>
+                
+                <div id="mode-edit-content" class="p-4 bg-stone-50 rounded hidden-section">
+                    <p class="text-lg tracking-widest mb-2 text-blue-500">. - .</p>
+                    <p class="font-bold text-stone-700">細節雕琢</p>
+                    <p class="text-sm text-stone-500">進入模型內部，編輯其構成的基礎元素：頂點 (Vertex)、邊 (Edge) 和面 (Face)。</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Modeling Tools -->
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-bold mb-4">必學建模工具 (編輯模式下)</h3>
+                    <ul class="space-y-4">
+                        <li class="border-l-2 border-orange-300 pl-3">
+                            <p class="font-bold flex items-center justify-between">
+                                <span>擠出 (Extrude)</span>
+                                <span class="bg-stone-200 px-2 py-0.5 rounded text-xs">快捷鍵 E</span>
+                            </p>
+                            <p class="text-sm text-stone-600 mt-1">從現有的面拉出新的幾何體，是拉伸模型最常用的工具。</p>
+                        </li>
+                        <li class="border-l-2 border-orange-300 pl-3">
+                            <p class="font-bold flex items-center justify-between">
+                                <span>環切 (Loop Cut)</span>
+                                <span class="bg-stone-200 px-2 py-0.5 rounded text-xs">快捷鍵 Ctrl+R</span>
+                            </p>
+                            <p class="text-sm text-stone-600 mt-1">在模型表面切出一圈新的邊，用於增加細節或控制形狀。</p>
+                        </li>
+                        <li class="border-l-2 border-orange-300 pl-3">
+                            <p class="font-bold flex items-center justify-between">
+                                <span>倒角 (Bevel)</span>
+                                <span class="bg-stone-200 px-2 py-0.5 rounded text-xs">快捷鍵 Ctrl+B</span>
+                            </p>
+                            <p class="text-sm text-stone-600 mt-1">將銳利的邊緣變得平滑，增加真實感（現實中很少有完美的銳角）。</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Basic Material -->
+                <div class="bg-stone-800 text-white p-6 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-bold mb-4 text-orange-400">材質基礎 (Principled BSDF)</h3>
+                    <p class="text-sm text-stone-300 mb-4">Blender 使用節點(Nodes)系統。最核心的節點是 Principled BSDF，只需調整幾個參數就能模擬大多數材質。</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between bg-stone-700 p-2 rounded">
+                            <span class="text-sm">Base Color (基礎色)</span>
+                            <div class="w-6 h-6 rounded-full bg-red-500 border border-stone-500"></div>
+                        </div>
+                        <div class="flex items-center justify-between bg-stone-700 p-2 rounded">
+                            <span class="text-sm">Metallic (金屬度)</span>
+                            <input type="range" min="0" max="100" value="0" class="w-24 accent-orange-500" disabled>
+                        </div>
+                        <div class="flex items-center justify-between bg-stone-700 p-2 rounded">
+                            <span class="text-sm">Roughness (粗糙度)</span>
+                            <input type="range" min="0" max="100" value="50" class="w-24 accent-orange-500" disabled>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VOL 3: RENDERING ==================== -->
+        <section id="content-vol3" class="space-y-8 hidden-section">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-stone-100 border-l-4 border-l-orange-500">
+                <h2 class="text-2xl font-bold mb-3 text-stone-800">下冊介紹：點亮場景與最終輸出</h2>
+                <p class="text-stone-600 leading-relaxed">
+                    模型建好後，沒有光就什麼都看不到。本冊將介紹燈光佈局，並深入探討 Blender 兩大算圖引擎 (Render Engines) 的差異。選擇合適的算圖引擎，對於作品的最終視覺效果和您的等待時間至關重要。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Render Engines Comparison Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-sm flex flex-col items-center">
+                    <h3 class="text-xl font-bold mb-2 text-center w-full">算圖引擎比較：Eevee vs Cycles</h3>
+                    <p class="text-xs text-stone-500 mb-4 text-center">了解不同引擎的特性以做出最佳選擇</p>
+                    <div class="chart-container">
+                        <canvas id="renderChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-stone-600 w-full">
+                        <ul class="list-disc pl-5">
+                            <li><strong class="text-blue-600">Eevee:</strong> 實時算圖，速度極快，適合風格化或快速預覽。</li>
+                            <li><strong class="text-orange-600">Cycles:</strong> 光線追蹤，極度真實，但極需硬體效能與時間。</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Learning Curve Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-sm flex flex-col items-center">
+                    <h3 class="text-xl font-bold mb-2 text-center w-full">Blender 學習曲線</h3>
+                    <p class="text-xs text-stone-500 mb-4 text-center">不要氣餒，突破初期的陡峭期後將海闊天空</p>
+                    <div class="chart-container">
+                        <canvas id="learningChart"></canvas>
+                    </div>
+                    <div class="mt-4 text-sm text-stone-600 w-full text-center">
+                        <p>初期因為介面複雜會感到受挫 (深淵期)，但熟悉快捷鍵後，技能將呈現指數型成長。</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Lighting Tip -->
+            <div class="bg-stone-800 text-white p-6 rounded-lg text-center mt-8">
+                <h3 class="text-xl font-bold text-yellow-400 mb-2">&#9728; 經典打光法：三點佈光 (3-Point Lighting)</h3>
+                <p class="text-stone-300">主光 (Key Light) 照亮主體、補光 (Fill Light) 減弱陰影、背光 (Rim Light) 勾勒邊緣輪廓，是讓模型立體的基礎公式。</p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-stone-200 text-stone-500 text-center py-6 mt-12">
+        <p class="text-sm">互動教學網頁展示用 | 使用 Vanilla JS & Tailwind CSS 構建</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Navigation Logic ---
+        function switchTab(vol) {
+            // Update Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'text-white', 'bg-orange-600', 'border-orange-800');
+                btn.classList.add('text-stone-600');
+            });
+            const activeBtn = document.getElementById(`btn-${vol}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-stone-600');
+
+            // Update Content Visibility
+            document.getElementById('content-vol1').style.display = 'none';
+            document.getElementById('content-vol2').style.display = 'none';
+            document.getElementById('content-vol3').style.display = 'none';
+            
+            const activeContent = document.getElementById(`content-${vol}`);
+            activeContent.style.display = 'block';
+            activeContent.classList.add('animate-fade-in'); // Simple visual cue
+
+            // Initialize charts ONLY when Vol 3 is opened to ensure canvas is visible for sizing
+            if(vol === 'vol3' && !chartsInitialized) {
+                initCharts();
+                chartsInitialized = true;
+            }
+        }
+
+        // --- Vol 1: Shortcut Interaction ---
+        const shortcutData = {
+            'G': { title: 'Grab (移動)', desc: '按下 G 鍵後，移動滑鼠即可移動選取的物件。配合 X, Y, Z 可鎖定軸向移動。' },
+            'R': { title: 'Rotate (旋轉)', desc: '按下 R 鍵後，移動滑鼠旋轉物件。連按兩次 R 進入軌跡球旋轉模式。' },
+            'S': { title: 'Scale (縮放)', desc: '按下 S 鍵後，拖曳滑鼠放大或縮小物件。' },
+            'X': { title: 'Delete (刪除)', desc: '刪除選取的物件。系統會彈出確認選單防呆。' }
+        };
+
+        function showShortcutInfo(key) {
+            const display = document.getElementById('shortcut-display');
+            const data = shortcutData[key];
+            display.innerHTML = `
+                <div>
+                    <h4 class="text-lg font-bold text-orange-600 mb-2">按鍵 [ ${key} ] : ${data.title}</h4>
+                    <p class="text-stone-700">${data.desc}</p>
+                </div>
+            `;
+            display.classList.add('bg-orange-50');
+            setTimeout(() => display.classList.remove('bg-orange-50'), 300);
+        }
+
+        // --- Vol 2: Mode Toggle Logic ---
+        function toggleMode(mode) {
+            const objBtn = document.getElementById('mode-obj-btn');
+            const editBtn = document.getElementById('mode-edit-btn');
+            const objContent = document.getElementById('mode-obj-content');
+            const editContent = document.getElementById('mode-edit-content');
+
+            if (mode === 'object') {
+                objBtn.className = "px-6 py-2 font-bold text-orange-600 border-b-2 border-orange-600";
+                editBtn.className = "px-6 py-2 font-bold text-stone-400 hover:text-stone-600";
+                objContent.style.display = 'block';
+                editContent.style.display = 'none';
+            } else {
+                editBtn.className = "px-6 py-2 font-bold text-orange-600 border-b-2 border-orange-600";
+                objBtn.className = "px-6 py-2 font-bold text-stone-400 hover:text-stone-600";
+                editContent.style.display = 'block';
+                objContent.style.display = 'none';
+            }
+        }
+
+        // --- Vol 3: Chart.js Initialization ---
+        let chartsInitialized = false;
+
+        function initCharts() {
+            // Chart 1: Radar Chart (Eevee vs Cycles)
+            const ctxRender = document.getElementById('renderChart').getContext('2d');
+            new Chart(ctxRender, {
+                type: 'radar',
+                data: {
+                    labels: ['算圖速度', '即時預覽', '物理真實度', '複雜光影計算', '低硬體需求'],
+                    datasets: [{
+                        label: 'Eevee',
+                        data: [9, 10, 5, 4, 8],
+                        fill: true,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(59, 130, 246)'
+                    }, {
+                        label: 'Cycles',
+                        data: [2, 3, 10, 10, 2],
+                        fill: true,
+                        backgroundColor: 'rgba(234, 88, 12, 0.2)',
+                        borderColor: 'rgb(234, 88, 12)',
+                        pointBackgroundColor: 'rgb(234, 88, 12)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgb(234, 88, 12)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, /* CRITICAL for container constraints */
+                    elements: { line: { borderWidth: 2 } },
+                    scales: { r: { angleLines: { display: true }, suggestedMin: 0, suggestedMax: 10 } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            // Chart 2: Line Chart (Learning Curve)
+            const ctxLearning = document.getElementById('learningChart').getContext('2d');
+            new Chart(ctxLearning, {
+                type: 'line',
+                data: {
+                    labels: ['第1天', '第3天', '第1週', '第2週', '第1個月', '第3個月'],
+                    datasets: [{
+                        label: '技能水平',
+                        data: [10, 5, 15, 40, 70, 95], // Dip represents the "valley of despair"
+                        borderColor: 'rgb(16, 185, 129)', // Emerald
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, /* CRITICAL for container constraints */
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: { display: true, text: '技能掌握度' } },
+                        x: { title: { display: true, text: '學習時間' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) { label += context.parsed.y + '%'; }
+                                    if(context.dataIndex === 1) return label + ' (介面混亂期)';
+                                    if(context.dataIndex === 3) return label + ' (記住快捷鍵，突破!)';
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize view
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure only vol1 is visible initially
+            document.getElementById('content-vol1').style.display = 'block';
+            document.getElementById('content-vol2').style.display = 'none';
+            document.getElementById('content-vol3').style.display = 'none';
+        });
+
+    </script>
+</body>
+</html>

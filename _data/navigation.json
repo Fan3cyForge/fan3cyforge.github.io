@@ -1,0 +1,10 @@
+{
+  "lectures": [
+    { "title": "3D 打印參數基礎 (Markdown)", "path": "/viewer.html?file=_posts/my_lesson.md" },
+    { "title": "3D 列印常見錯誤", "path": "/3Dlectures/3DPrint/lectures01常見問題.html" },
+    { "title": "PLA vs PETG 參數攻略 (P2S)", "path": "/3Dlectures/3DPrint/lectures02p2s.html" },
+    { "title": "講義庫索引", "path": "/lectures/index.html" }
+  ],
+  "assignments": [],
+  "assets": []
+}

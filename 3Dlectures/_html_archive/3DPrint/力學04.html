@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學 Vol.4：4D 打印與智能材料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #050505; color: #e2e8f0; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin: auto; height: 300px; }
+        .tab-btn.active { background-color: #ec4899; color: white; border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.5); }
+        .tab-content { display: none; animation: morphIn 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .tab-content.active { display: block; }
+        @keyframes morphIn { from { opacity: 0; transform: scale(0.9) rotate(-2deg); filter: hue-rotate(90deg); } to { opacity: 1; transform: scale(1) rotate(0); filter: hue-rotate(0); } }
+
+        /* Morphing Box Animation */
+        .smart-part { width: 150px; height: 10px; background: #ec4899; transition: all 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55); border-radius: 5px; }
+        .state-active { transform: rotate(180deg) scaleX(0.5); border-radius: 50px; height: 150px; }
+        
+        /* Thermal Gradient Visual */
+        .heat-map { background: linear-gradient(90deg, #3b82f6, #fbbf24, #ef4444); height: 20px; border-radius: 10px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Chosen Palette: Deep Void (Black/Slate 950) with Neon Pink (Pink 500) and Cyber Lime. -->
+    
+    <!-- Application Structure Plan: 
+         Structure: Time-based Simulation Interface. 
+         Reasoning: 4D printing is about "change over time". The UI focuses on state transitions (Before vs After). It's designed to look like a high-tech lab controller for experimental materials.
+         User Flow: Select Stimulus (Heat/Water) -> Observe Morphing -> Analyze Material Response -> Design Application.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Material Transition: Line chart showing Glass Transition Temperature (Tg) and modulus change.
+         2. Shape Memory: Interactive CSS animation simulating a self-folding structure.
+         3. Bio-mimicry: Bar chart comparing synthetic actuators vs natural muscles.
+         4. Thermal Management: Heatmap simulation for heat dissipation infill.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="max-w-6xl mx-auto px-6 py-12">
+        
+        <header class="mb-12 border-b border-pink-500/30 pb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-violet-500 uppercase">4D Printing <span class="text-white">Research</span></h1>
+                <p class="text-slate-400 mt-1 font-mono text-sm">Temporal Physics & Programmable Matter</p>
+            </div>
+            <div class="px-4 py-1 border border-pink-500 text-pink-500 text-[10px] font-bold rounded animate-pulse">
+                STATE: EVOLVING
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="flex flex-wrap gap-2 mb-10">
+            <button class="tab-btn active px-6 py-2 rounded border border-slate-700 text-xs font-bold uppercase tracking-widest" data-target="memory">形狀記憶 (Memory)</button>
+            <button class="tab-btn px-6 py-2 rounded border border-slate-700 text-xs font-bold uppercase tracking-widest" data-target="hygro">吸濕驅動 (Hygro)</button>
+            <button class="tab-btn px-6 py-2 rounded border border-slate-700 text-xs font-bold uppercase tracking-widest" data-target="bistable">雙穩態 (Bistable)</button>
+            <button class="tab-btn px-6 py-2 rounded border border-slate-700 text-xs font-bold uppercase tracking-widest" data-target="thermal">熱能管理 (Thermal)</button>
+        </nav>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Section: Shape Memory -->
+                <section id="memory" class="tab-content active bg-slate-900/40 p-8 rounded-3xl border border-pink-500/10">
+                    <h2 class="text-2xl font-bold mb-4 text-pink-400">形狀記憶效應：物理編程</h2>
+                    <p class="text-slate-400 mb-8 leading-relaxed text-sm">
+                        利用特定聚合物（如某些改性 PLA 或 TPU）嘅 **玻璃轉化溫度 (Tg)**。當你將零件加熱過 Tg，佢會變軟，你可以將佢摺埋；冷卻後形狀固定。再次加熱時，零件內部積聚嘅內應力會釋放，令佢自動跳返去原本打印嘅形狀。
+                    </p>
+                    
+                    <div class="flex flex-col items-center justify-center p-12 bg-black/50 rounded-2xl mb-8 border border-slate-800">
+                        <div id="memory-part" class="smart-part shadow-[0_0_30px_rgba(236,72,153,0.3)]"></div>
+                        <button onclick="toggleMorph()" class="mt-12 bg-pink-600 hover:bg-pink-500 text-white px-8 py-3 rounded-full font-bold text-sm transition-all">
+                            APPLY THERMAL STIMULUS (60°C)
+                        </button>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">物理原理</h4>
+                            <p class="text-xs text-slate-300">Entropy Elasticity：高分子鏈喺加熱時會傾向回復到隨機雜亂嘅高熵狀態。</p>
+                        </div>
+                        <div class="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">應用場景</h4>
+                            <p class="text-xs text-slate-300">血管支架、可自動部署嘅太空衛星天線。</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section: Thermal Management -->
+                <section id="thermal" class="tab-content bg-slate-900/40 p-8 rounded-3xl border border-pink-500/10">
+                    <h2 class="text-2xl font-bold mb-4 text-cyan-400">主動熱管理：填充即是散熱器</h2>
+                    <p class="text-slate-400 mb-6 text-sm">唔好只係將 3D 打印視為結構。透過物理模擬，我們可以設計「熱流填充結構」。利用 Gyroid 或者空氣通道，引導氣流主動冷卻內部電子零件。</p>
+                    
+                    <div class="bg-black/40 p-6 rounded-xl border border-slate-800 mb-8">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase mb-4">散熱效率 vs 表面積比</h4>
+                        <div class="chart-container">
+                            <canvas id="thermalChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Side Strategy Panel -->
+            <div class="space-y-6">
+                <div class="bg-gradient-to-br from-pink-600 to-violet-700 p-8 rounded-3xl shadow-2xl">
+                    <h3 class="text-xl font-black mb-4 italic uppercase">4D 思考模型</h3>
+                    <p class="text-pink-100 text-sm leading-relaxed mb-6">
+                        喺 3D 打印，我哋通常想「避免應力 (Stress)」。
+                        但喺 4D 打印，我哋要 **「收納應力 (Harvesting Stress)」**。
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 bg-black/20 p-3 rounded-lg">
+                            <span class="text-lime-400 font-mono text-xs">01</span>
+                            <span class="text-xs font-bold">應力即是能量</span>
+                        </div>
+                        <div class="flex items-center gap-3 bg-black/20 p-3 rounded-lg">
+                            <span class="text-lime-400 font-mono text-xs">02</span>
+                            <span class="text-xs font-bold">幾何即是編程</span>
+                        </div>
+                        <div class="flex items-center gap-3 bg-black/20 p-3 rounded-lg">
+                            <span class="text-lime-400 font-mono text-xs">03</span>
+                            <span class="text-xs font-bold">時間即是維度</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-4 tracking-widest">材料動態數據 (DMA)</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1">
+                                <span>PLA (形狀記憶恢復率)</span>
+                                <span class="text-pink-500">92%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1 rounded-full">
+                                <div class="bg-pink-500 h-1 rounded-full" style="width: 92%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] mb-1">
+                                <span>TPU (柔性遲滯現象)</span>
+                                <span class="text-pink-500">LOW</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1 rounded-full">
+                                <div class="bg-pink-500 h-1 rounded-full" style="width: 30%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="mt-6 text-[10px] text-slate-500 leading-tight">
+                        🔴 <span class="font-bold">低把握建議</span>：喺 FDM 打印中實現精確 4D 效應需要極高嘅環境控制，建議先喺恆溫水浴中測試 Tg 轉變。
+                    </p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Tab Switcher
+            const btns = document.querySelectorAll('.tab-btn');
+            const contents = document.querySelectorAll('.tab-content');
+
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    btns.forEach(b => b.classList.remove('active'));
+                    contents.forEach(c => c.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.getElementById(btn.dataset.target).classList.add('active');
+                });
+            });
+
+            // Thermal Chart
+            const ctxThermal = document.getElementById('thermalChart').getContext('2d');
+            new Chart(ctxThermal, {
+                type: 'line',
+                data: {
+                    labels: ['Solid', 'Grid', 'Tri-Hex', 'Gyroid', 'TPMS-Optimized'],
+                    datasets: [{
+                        label: '散熱效率 (Relative)',
+                        data: [10, 35, 55, 88, 98],
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#1e293b' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+
+        function toggleMorph() {
+            const part = document.getElementById('memory-part');
+            part.classList.toggle('state-active');
+        }
+    </script>
+</body>
+</html>

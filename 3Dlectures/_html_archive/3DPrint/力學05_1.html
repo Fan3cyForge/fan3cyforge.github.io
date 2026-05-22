@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D打印工程物理學 Vol.6：極限工藝深層拆解</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Base typography and aesthetics */
+        body { font-family: 'PingFang HK', 'Microsoft JhengHei', sans-serif; background-color: #f5f5f4; color: #292524; scroll-behavior: smooth; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #e7e5e4; }
+        ::-webkit-scrollbar-thumb { background: #a8a29e; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #78716c; }
+
+        /* MANDATORY Chart Container Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; /* Base height */
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container { height: 350px; }
+        }
+
+        /* Interactive Tabs */
+        .tab-btn { transition: all 0.3s ease; border-bottom: 3px solid transparent; opacity: 0.6; padding-bottom: 0.75rem; font-weight: 600; letter-spacing: 0.05em; cursor: pointer; }
+        .tab-btn:hover { opacity: 1; }
+        .tab-btn.active { opacity: 1; font-weight: 800; }
+        
+        /* Protocol specific accents */
+        .tab-btn[data-target="sec-annealing"].active { border-bottom-color: #dc2626; color: #dc2626; }
+        .tab-btn[data-target="sec-sintering"].active { border-bottom-color: #d97706; color: #d97706; }
+        .tab-btn[data-target="sec-fiber"].active { border-bottom-color: #0284c7; color: #0284c7; }
+        .tab-btn[data-target="sec-rf"].active { border-bottom-color: #4f46e5; color: #4f46e5; }
+
+        .tab-content { display: none; animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .tab-content.active { display: block; }
+        
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- CSS VISUALIZERS (NO SVG) --- */
+
+        /* 1. Annealing Visualizer */
+        .polymer-stage { width: 100%; height: 200px; background-color: #1c1917; border-radius: 0.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 12px; box-shadow: inset 0 4px 6px rgba(0,0,0,0.3); transition: background-color 1.5s ease; }
+        .polymer-chain { width: 70%; height: 6px; background-color: #78716c; border-radius: 3px; position: relative; transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+        
+        /* Raw state (Messy) */
+        .chain-1 { transform: rotate(18deg) translateX(-10px) translateY(-15px); }
+        .chain-2 { transform: rotate(-12deg) translateX(15px); }
+        .chain-3 { transform: rotate(22deg) translateX(-5px) translateY(15px); }
+        
+        /* Annealed state (Ordered/Crystalline) */
+        .annealed-state { background-color: #292524; }
+        .annealed-state .polymer-chain { transform: rotate(0deg) translate(0, 0); background-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+
+        /* 2. Sintering Visualizer */
+        .sinter-stage { width: 100%; height: 200px; background-color: #e7e5e4; border-radius: 0.5rem; position: relative; display: flex; justify-content: center; align-items: center; overflow: hidden; border: 1px solid #d6d3d1; }
+        .particle { width: 80px; height: 80px; background-color: #94a3b8; border-radius: 50%; position: absolute; transition: all 2s cubic-bezier(0.25, 0.1, 0.25, 1); border: 2px solid #64748b; }
+        .particle-left { transform: translateX(-45px); }
+        .particle-right { transform: translateX(45px); }
+        .neck { width: 0px; height: 20px; background-color: #d97706; position: absolute; transition: all 2s ease-in-out; opacity: 0; z-index: 0; }
+        
+        /* Sintered state */
+        .sintered-state .particle { background-color: #f59e0b; border-color: #d97706; transform: scale(0.85) translateX(0); }
+        .sintered-state .particle-left { transform: translateX(-28px) scale(0.85); }
+        .sintered-state .particle-right { transform: translateX(28px) scale(0.85); }
+        .sintered-state .neck { width: 50px; height: 50px; opacity: 1; border-radius: 10px; }
+
+        /* 3. Fiber Visualizer */
+        .fiber-stage { width: 100%; height: 240px; background-color: #f5f5f4; border-radius: 0.5rem; position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; border: 1px solid #d6d3d1; }
+        .bolt-hole { width: 70px; height: 70px; border-radius: 50%; background-color: #fff; border: 4px solid #78716c; z-index: 10; position: relative; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        .fiber-strand { position: absolute; background: #0284c7; opacity: 0.7; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* 4. RF Lens Visualizer */
+        .rf-stage { width: 100%; height: 200px; border-radius: 0.5rem; position: relative; overflow: hidden; display: flex; border: 2px solid #cbd5e1; background-color: #f8fafc; }
+        .rf-zone { flex: 1; transition: background-color 0.3s ease; height: 100%; }
+        .rf-wave { position: absolute; width: 4px; height: 100%; background: rgba(79, 70, 229, 0.8); left: -10px; border-radius: 2px; }
+        
+        @keyframes propagate {
+            0% { left: -5%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { left: 105%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-stone-300 selection:text-stone-900">
+
+    <!-- Chosen Palette: Warm Neutrals (Stone) as the base for a clean, technical laboratory feel. 
+         Accents map to physics concepts: Red (Heat/Annealing), Amber (Metal/Sintering), Sky Blue (Flow/Fibers), Indigo (Waves/RF). -->
+    
+    <!-- Application Structure Plan:
+         Structure: Tabbed Interactive Dashboard.
+         Reasoning: The Source Report contains 4 deep, technical engineering concepts. A long scrolling page would cause cognitive overload. The tabbed structure acts as a "Virtual Lab", allowing users to isolate and experiment with one physical protocol at a time.
+         User Flow: User reads context intro -> Selects a protocol tab -> Explores the theory -> Interacts with the CSS visualizer (changing states) -> Analyzes the resulting data (Chart/Math) -> Reads the "Genius Tip" for real-world application.
+    -->
+
+    <!-- Visualization & Content Choices:
+         1. Annealing: Goal: Visualize stress relief. Viz: CSS polymer chains snapping from chaotic to ordered. Chart: Bar chart proving strength/temp gains. Interaction: "Heat" button. Justification: Translates abstract molecular diffusion into a tangible animation.
+         2. Sintering: Goal: Teach non-uniform shrinkage math & solid-state diffusion. Viz: CSS Neck Growth animation + JS Calculator. Interaction: Input dimensions -> calculates "Green Part". Justification: Directly solves the engineer's problem of CAD scaling for Metal FDM.
+         3. Fiber Alignment: Goal: Show flow routing around high-stress areas (holes). Viz: CSS dynamic lines. Interaction: Toggle Grid vs Concentric patterns. Justification: Visually proves why Kevlar-style routing beats traditional grid infill without needing SVG renders.
+         4. RF Physics: Goal: Show Effective Medium Theory (Infill % to Dielectric Constant). Viz: CSS density gradient with animated wavefronts + Chart.js line chart. Interaction: Slider changes infill, dynamically updating Er and lens density. Justification: Connects mechanical slicing to invisible electromagnetic wave properties.
+    -->
+
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <div class="max-w-6xl mx-auto px-4 py-8 md:py-12">
+        
+        <!-- App Header -->
+        <header class="mb-10 pb-6 border-b border-stone-300">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="px-3 py-1 bg-stone-800 text-stone-100 text-xs font-bold uppercase tracking-widest rounded shadow-sm">Engineering Lab</span>
+                <span class="text-sm font-mono text-stone-500">Vol.6 Deep Dive</span>
+            </div>
+            <h1 class="text-3xl md:text-5xl font-black text-stone-900 tracking-tight mb-4">3D打印物理學：<span class="text-stone-500">極限工藝拆解</span></h1>
+            <p class="text-base md:text-lg text-stone-600 max-w-4xl leading-relaxed">
+                將 3D 打印由單純的「形狀製造」昇華至「材料定義製造 (Material Defined Manufacturing)」。本應用程式將帶你探索四個決定零件極限性能的底層物理協議 (Protocols)，助你打破高分子與金屬材料的物理限制。
+            </p>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="flex flex-wrap gap-4 md:gap-8 mb-8 border-b border-stone-200" id="protocol-nav">
+            <button class="tab-btn active uppercase" data-target="sec-annealing">1. 退火物理 (Annealing)</button>
+            <button class="tab-btn uppercase" data-target="sec-sintering">2. 燒結物理 (Sintering)</button>
+            <button class="tab-btn uppercase" data-target="sec-fiber">3. 纖維排列 (Fiber Alignment)</button>
+            <button class="tab-btn uppercase" data-target="sec-rf">4. 射頻物理 (RF Physics)</button>
+        </nav>
+
+        <main class="bg-white rounded-xl md:rounded-2xl shadow-sm border border-stone-200 p-5 md:p-10 min-h-[650px]">
+
+            <!-- ==========================================
+                 SECTION 1: ANNEALING PHYSICS
+                 ========================================== -->
+            <section id="sec-annealing" class="tab-content active">
+                <div class="mb-8 max-w-4xl">
+                    <h2 class="text-2xl md:text-3xl font-bold text-stone-800 mb-4 flex items-center gap-3">
+                        <span class="w-4 h-4 bg-red-600 rounded"></span> 分子鏈重組與應力釋放
+                    </h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        <strong>本節目的：</strong> 了解如何透過熱處理消除 FDM 打印的殘餘內應力。<br>
+                        FDM 打印本質上是「非平衡冷卻」。材料從噴嘴擠出後快速降溫，分子鏈被強行凍結在不穩定狀態。將零件重新加熱至玻璃轉化溫度 (Tg) 以上，能讓高分子鏈獲得足夠能量進行微觀運動與「擴散 (Interdiffusion)」，重新排布形成高強度的結晶區。
+                    </p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+                    <!-- Interactive Visual -->
+                    <div class="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-stone-500 uppercase tracking-wider">微觀擴散模擬</h3>
+                            <button id="btn-anneal" class="px-4 py-2 bg-red-600 text-white rounded text-xs font-bold shadow hover:bg-red-700 transition-colors">🔥 加熱至 Tg 以上</button>
+                        </div>
+                        
+                        <div id="polymer-viz" class="polymer-stage mb-4">
+                            <div class="absolute top-2 left-2 text-[10px] text-stone-400 uppercase tracking-widest font-mono">Microscopic View</div>
+                            <div class="polymer-chain chain-1"></div>
+                            <div class="polymer-chain chain-2"></div>
+                            <div class="polymer-chain chain-3"></div>
+                        </div>
+                        <div id="anneal-status" class="p-3 bg-stone-200 text-stone-700 rounded text-xs font-medium text-center transition-colors duration-500">
+                            狀態：非平衡冷卻，分子鏈雜亂，層間充滿殘餘內應力。
+                        </div>
+                    </div>
+
+                    <!-- Theory & Chart -->
+                    <div class="space-y-6">
+                        <div class="bg-red-50 p-5 rounded-lg border border-red-100">
+                            <h4 class="font-bold text-red-900 text-sm uppercase mb-3 tracking-wide">性能躍升對比 (以 PLA 為例)</h4>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="annealChart"></canvas>
+                            </div>
+                            <p class="text-xs text-red-800 mt-4 leading-relaxed">
+                                <strong>工程實例：</strong> 印製高溫散熱風扇架。普通 PLA 於 55°C 即會軟化。放入 70°C-80°C 烤箱退火 2-4 小時後，耐溫性能大幅突破 100°C，且抗拉強度提升 30%-50%。
+                            </p>
+                        </div>
+
+                        <div class="bg-stone-100 p-5 rounded-lg border-l-4 border-stone-500">
+                            <h4 class="font-bold text-stone-800 mb-2 flex items-center gap-2">💡 天才工程師技巧：沙浴包埋法</h4>
+                            <p class="text-sm text-stone-600 leading-relaxed">
+                                退火最大的物理挑戰是零件在接近熔點時極易受重力影響而塌陷變形。<br>
+                                <strong>解法 (Sand Packing)：</strong> 將零件完全埋入極細的鹽粉或幼沙中並壓實，然後再進行加熱。外部粉末將提供完美的物理支撐力，完全抵抗幾何形變。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 2: SINTERING PHYSICS
+                 ========================================== -->
+            <section id="sec-sintering" class="tab-content">
+                <div class="mb-8 max-w-4xl">
+                    <h2 class="text-2xl md:text-3xl font-bold text-stone-800 mb-4 flex items-center gap-3">
+                        <span class="w-4 h-4 bg-amber-600 rounded"></span> 金屬相變與固態擴散
+                    </h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        <strong>本節目的：</strong> 掌握 Metal FDM 的收縮補償計算與物理原理。<br>
+                        在真空燒結爐中，未達金屬熔點的高溫會以「表面能」驅動原子進行固態擴散。粉末顆粒之間互相吸引並形成「頸部 (Neck Growth)」，孔隙隨之閉合。這物理過程會導致「綠體 (Green Part)」發生劇烈的體積收縮，轉化為實體金屬零件。
+                    </p>
+                </div>
+
+                <div class="grid lg:grid-cols-12 gap-8 items-start">
+                    <!-- Calculator & Viz -->
+                    <div class="lg:col-span-7 bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
+                        <div class="flex flex-wrap justify-between items-end mb-5 gap-2">
+                            <div>
+                                <h3 class="text-sm font-bold text-stone-800 uppercase tracking-wider mb-1">綠體收縮補償計算器</h3>
+                                <p class="text-xs text-stone-500">物理公式: <code>Green = Target / (1 - Shrinkage)</code></p>
+                            </div>
+                            <span class="text-xs font-mono bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded">316L 預估收縮率: 18.5%</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-3 mb-6">
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 uppercase mb-2">目標成品 X (mm)</label>
+                                <input type="number" id="sin-x" value="100" class="w-full p-2 border border-stone-300 rounded focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm font-mono shadow-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 uppercase mb-2">目標成品 Y (mm)</label>
+                                <input type="number" id="sin-y" value="50" class="w-full p-2 border border-stone-300 rounded focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm font-mono shadow-sm transition">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 uppercase mb-2">目標成品 Z (mm)</label>
+                                <input type="number" id="sin-z" value="20" class="w-full p-2 border border-stone-300 rounded focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none text-sm font-mono shadow-sm transition">
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50 border-2 border-dashed border-amber-400 p-4 rounded-lg text-center mb-8">
+                            <span class="block text-xs font-bold text-amber-700 uppercase mb-2">CAD 設計所需「綠體」放大尺寸</span>
+                            <div class="text-2xl font-mono font-black text-stone-800 tracking-tight" id="sin-result">
+                                X: 122.70 | Y: 61.35 | Z: 24.54
+                            </div>
+                        </div>
+
+                        <!-- CSS Visualizer -->
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-sm font-bold text-stone-800 uppercase tracking-wider">Neck Growth 擴散模擬</h3>
+                            <button id="btn-sinter" class="px-3 py-1.5 bg-stone-800 text-white rounded text-xs font-bold hover:bg-stone-700 transition-colors shadow">開始燒結 (1300°C)</button>
+                        </div>
+                        <div id="sinter-viz" class="sinter-stage cursor-pointer">
+                            <div class="absolute top-2 left-2 text-[10px] text-stone-400 font-bold uppercase tracking-widest z-10">Click Area to Toggle</div>
+                            <div class="neck"></div>
+                            <div class="particle particle-left z-10"></div>
+                            <div class="particle particle-right z-10"></div>
+                        </div>
+                    </div>
+
+                    <!-- Expert Tips -->
+                    <div class="lg:col-span-5 space-y-6">
+                        <div class="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-r-lg">
+                            <h4 class="font-bold text-amber-900 mb-2 text-sm uppercase">⚠ 物理警告：非對稱收縮</h4>
+                            <p class="text-sm text-amber-800 leading-relaxed">
+                                實務上，零件 Z 軸的收縮率通常會大於 X/Y 軸。因為在燒結過程中，金屬處於極度柔軟狀態，會受到自身重力 (Gravity Sag) 影響向下壓實。高級切片軟件必須設置非等比例的縮放矩陣。
+                            </p>
+                        </div>
+
+                        <div class="bg-stone-100 p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h4 class="font-bold text-stone-800 mb-3 flex items-center gap-2">💡 天才工程師技巧：Sintering Setter</h4>
+                            <p class="text-sm text-stone-600 leading-relaxed mb-3">
+                                為防止懸垂結構在高溫爐中塌陷，必須設計骨架支撐 (Sintering Setter)。
+                            </p>
+                            <div class="bg-white p-3 rounded border border-stone-200 text-sm text-stone-700">
+                                <strong>核心法則：</strong> 支撐結構必須使用與主零件 <em>完全相同的金屬材料</em> 列印。這確保兩者在爐中以完全相同的速率收縮。若使用不同熱膨脹系數的材料，零件會在相變過程中被支撐撕裂。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 3: FIBER ALIGNMENT
+                 ========================================== -->
+            <section id="sec-fiber" class="tab-content">
+                <div class="mb-8 max-w-4xl">
+                    <h2 class="text-2xl md:text-3xl font-bold text-stone-800 mb-4 flex items-center gap-3">
+                        <span class="w-4 h-4 bg-sky-600 rounded"></span> 流體剪切與各向異性 (Anisotropy)
+                    </h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        <strong>本節目的：</strong> 透過控制擠出路徑，將材料強度對齊應力流線。<br>
+                        含有短碳纖維/玻璃纖維的聚合物在擠出噴嘴時，受到強烈的剪切流 (Shear Flow) 影響，原本隨機分佈的纖維會被強行拉直並平行於列印路徑。因此，纖維<strong>只在路徑方向</strong>提供抗拉強度。錯誤的填充會截斷應力流，導致零件提早斷裂。
+                    </p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                    <!-- Visual Tool -->
+                    <div class="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
+                            <h3 class="text-sm font-bold text-stone-800 uppercase tracking-wider">高應力螺栓孔模擬</h3>
+                            <button id="btn-fiber" class="px-4 py-2 bg-stone-800 text-white rounded text-xs font-bold hover:bg-stone-700 transition-colors shadow">切換至 同心 (Concentric) 結構</button>
+                        </div>
+                        
+                        <div id="fiber-stage-viz" class="fiber-stage mb-5">
+                            <div class="bolt-hole">
+                                <span class="text-[10px] font-black text-stone-400 tracking-widest">BOLT</span>
+                            </div>
+                            <!-- Fibers JS generated -->
+                        </div>
+                        <div id="fiber-alert" class="p-3 bg-red-100 border border-red-200 text-red-800 rounded text-xs font-medium text-center transition-colors">
+                            狀態：傳統 Grid 網格填充。力量容易將纖維從孔洞邊緣截斷撕裂。
+                        </div>
+                    </div>
+
+                    <!-- Theory -->
+                    <div class="space-y-6">
+                        <div class="bg-sky-50 border-l-4 border-sky-600 p-5 rounded-r-lg">
+                            <h4 class="font-bold text-sky-900 mb-3 text-sm uppercase tracking-wide">結構重定義：路徑即強度</h4>
+                            <p class="text-sm text-sky-800 leading-relaxed mb-3">
+                                停止在承受高應力的碳纖維零件上盲目使用交叉網格。必須根據 <strong>應力流線 (Stress Streamlines)</strong> 規劃路徑：
+                            </p>
+                            <ul class="space-y-2">
+                                <li class="flex items-center gap-3 text-sm text-sky-900 bg-white/70 p-2.5 rounded shadow-sm">
+                                    <span class="w-2.5 h-2.5 bg-sky-500 rounded-full shrink-0"></span> 無人機機臂 (彎曲載荷)：縱向 0度排列
+                                </li>
+                                <li class="flex items-center gap-3 text-sm text-sky-900 bg-white/70 p-2.5 rounded shadow-sm">
+                                    <span class="w-2.5 h-2.5 bg-sky-500 rounded-full shrink-0"></span> 傳動扭矩軸 (扭矩載荷)：45度螺旋排列
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-stone-100 p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h4 class="font-bold text-stone-800 mb-2 flex items-center gap-2">💡 天才工程師技巧：Kevlar 編織邏輯</h4>
+                            <p class="text-sm text-stone-600 leading-relaxed">
+                                在承受螺栓緊固力的高應力孔洞周圍，強制在切片軟件中增加 <strong>環繞壁 (Perimeters / Concentric Rings)</strong> 的數量。<br><br>
+                                物理效應：這會引導短纖維在孔洞周圍形成連續的同心圓環，如同防彈背心的 Kevlar 編織邏輯，極大化抵抗螺栓撐裂的力量。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==========================================
+                 SECTION 4: RF PHYSICS
+                 ========================================== -->
+            <section id="sec-rf" class="tab-content">
+                <div class="mb-8 max-w-4xl">
+                    <h2 class="text-2xl md:text-3xl font-bold text-stone-800 mb-4 flex items-center gap-3">
+                        <span class="w-4 h-4 bg-indigo-600 rounded"></span> 電介質常數與波束成形 (RF Physics)
+                    </h2>
+                    <p class="text-stone-600 leading-relaxed">
+                        <strong>本節目的：</strong> 針對 Network Engineer，掌握有效介質理論 (Effective Medium Theory)。<br>
+                        空氣的介電常數 (Er) 為 1.0，固體塑膠約為 3.0。透過精確控制 3D 打印的填充率 (Infill Density)，我們可以創造出介於兩者之間特定 Er 值的物理結構，從而在物理層直接控制電磁波的傳播速度與折射。
+                    </p>
+                </div>
+
+                <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+                    <!-- Interactive Tool -->
+                    <div class="bg-stone-50 p-5 md:p-6 rounded-xl border border-stone-200">
+                        <div class="mb-5">
+                            <h3 class="text-sm font-bold text-stone-800 uppercase tracking-wider mb-2">GRIN 漸變透鏡：波束聚焦模擬</h3>
+                            <p class="text-xs text-stone-500 mb-4 leading-relaxed">調整中心區域的填充率。根據物理定律，介質密度越高，電磁波波前 (Wavefront) 穿透速度越慢，進而產生彎曲與聚焦效應。</p>
+                            
+                            <label class="block text-xs font-bold text-stone-700 uppercase mb-2">中心填充率 (Center Infill %)</label>
+                            <input type="range" id="rf-slider" min="0" max="100" value="80" class="w-full mb-2 accent-indigo-600 cursor-pointer">
+                            <div class="flex justify-between text-xs font-mono text-stone-500 mb-5">
+                                <span>0% (Air)</span>
+                                <span class="font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 px-2 py-0.5 rounded shadow-sm">Center: <span id="rf-val">80</span>%</span>
+                                <span>100% (Solid)</span>
+                            </div>
+                        </div>
+
+                        <div id="rf-lens-container" class="rf-stage mb-3">
+                            <!-- JS injects density zones and waves -->
+                        </div>
+                        <p class="text-[10px] text-center text-stone-400 uppercase tracking-widest font-bold">深色區域 = 高介電常數 (Er) = 電波傳播減慢</p>
+                    </div>
+
+                    <!-- Chart & Tips -->
+                    <div class="space-y-6">
+                        <div class="bg-indigo-50 border border-indigo-100 p-5 rounded-xl">
+                            <h4 class="font-bold text-indigo-900 mb-3 text-sm uppercase tracking-wide">有效介電常數預測模型</h4>
+                            <div class="chart-container" style="height: 200px;">
+                                <canvas id="rfChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-stone-100 p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h4 class="font-bold text-stone-800 mb-3 flex items-center gap-2">💡 天才工程師技巧：物理濾波與成形</h4>
+                            <ul class="space-y-3">
+                                <li class="text-sm text-stone-600 leading-relaxed">
+                                    <strong class="text-indigo-800">GRIN 透鏡：</strong> 傳統天線透鏡需依賴精確的物理曲面。利用 3D 打印，我們可以印出一塊平整的板子，僅透過切片軟件設定：中心高 Infill (慢波)，邊緣低 Infill (快波)。利用密度漸變達成波束成形 (Beamforming)。
+                                </li>
+                                <li class="text-sm text-stone-600 leading-relaxed border-t border-stone-300 pt-3">
+                                    <strong class="text-indigo-800">EBG 結構：</strong> 利用導電與絕緣耗材進行雙色打印，建立週期性的物理結構 (電磁帶隙)，可阻擋特定頻率的 WiFi 雜訊，完美隔離 PCB 板上的信號串擾。
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Application Logic (Vanilla JS) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. Tab Navigation Routing ---
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Reset all
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Activate clicked
+                    btn.classList.add('active');
+                    const targetId = btn.getAttribute('data-target');
+                    document.getElementById(targetId).classList.add('active');
+                });
+            });
+
+            // --- 2. Annealing Logic ---
+            const btnAnneal = document.getElementById('btn-anneal');
+            const polyViz = document.getElementById('polymer-viz');
+            const annealStatus = document.getElementById('anneal-status');
+            let isAnnealed = false;
+
+            btnAnneal.addEventListener('click', () => {
+                isAnnealed = !isAnnealed;
+                if(isAnnealed) {
+                    polyViz.classList.add('annealed-state');
+                    btnAnneal.textContent = '❄️ 冷卻定型 (重置狀態)';
+                    btnAnneal.classList.replace('bg-red-600', 'bg-stone-600');
+                    btnAnneal.classList.replace('hover:bg-red-700', 'hover:bg-stone-700');
+                    annealStatus.className = "p-3 bg-red-100 text-red-800 rounded text-xs font-medium text-center transition-colors duration-500";
+                    annealStatus.innerHTML = '<strong>狀態：退火完成。</strong> 分子鏈越過層界擴散融合，形成高強度結晶區。';
+                } else {
+                    polyViz.classList.remove('annealed-state');
+                    btnAnneal.textContent = '🔥 加熱至 Tg 以上';
+                    btnAnneal.classList.replace('bg-stone-600', 'bg-red-600');
+                    btnAnneal.classList.replace('hover:bg-stone-700', 'hover:bg-red-700');
+                    annealStatus.className = "p-3 bg-stone-200 text-stone-700 rounded text-xs font-medium text-center transition-colors duration-500";
+                    annealStatus.textContent = '狀態：非平衡冷卻，分子鏈雜亂，層間充滿殘餘內應力。';
+                }
+            });
+
+            // Anneal Chart (Chart.js)
+            const ctxAnneal = document.getElementById('annealChart').getContext('2d');
+            new Chart(ctxAnneal, {
+                type: 'bar',
+                data: {
+                    labels: ['抗拉強度 (MPa)', '熱變形溫度 (°C)'],
+                    datasets: [
+                        { label: 'Raw PLA', data: [45, 55], backgroundColor: '#a8a29e', borderRadius: 4, barPercentage: 0.6 },
+                        { label: 'Annealed PLA', data: [65, 105], backgroundColor: '#dc2626', borderRadius: 4, barPercentage: 0.6 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', labels: { boxWidth: 12, font: {family: "'PingFang HK', sans-serif"} } } },
+                    scales: { 
+                        y: { beginAtZero: true, grid: { color: '#fecaca' }, ticks: { font: {size: 10} } }, 
+                        x: { grid: { display: false }, ticks: { font: {size: 11, weight: 'bold'} } } 
+                    }
+                }
+            });
+
+
+            // --- 3. Sintering Logic ---
+            const sinInputs = ['sin-x', 'sin-y', 'sin-z'].map(id => document.getElementById(id));
+            const sinResult = document.getElementById('sin-result');
+            const shrinkage = 0.185; // 316L SS
+            
+            function calcGreenSize() {
+                const vals = sinInputs.map(input => parseFloat(input.value) || 0);
+                const greens = vals.map(v => (v / (1 - shrinkage)).toFixed(2));
+                sinResult.innerHTML = `X: ${greens[0]} | Y: ${greens[1]} | Z: ${greens[2]}`;
+            }
+            sinInputs.forEach(input => input.addEventListener('input', calcGreenSize));
+
+            // Sinter Animation Toggle
+            const sinterViz = document.getElementById('sinter-viz');
+            const btnSinter = document.getElementById('btn-sinter');
+            let isSintered = false;
+            
+            function toggleSinter() {
+                isSintered = !isSintered;
+                if(isSintered) {
+                    sinterViz.classList.add('sintered-state');
+                    btnSinter.textContent = '重置綠體狀態';
+                    btnSinter.classList.replace('bg-stone-800', 'bg-amber-600');
+                    btnSinter.classList.replace('hover:bg-stone-700', 'hover:bg-amber-700');
+                } else {
+                    sinterViz.classList.remove('sintered-state');
+                    btnSinter.textContent = '開始燒結 (1300°C)';
+                    btnSinter.classList.replace('bg-amber-600', 'bg-stone-800');
+                    btnSinter.classList.replace('hover:bg-amber-700', 'hover:bg-stone-700');
+                }
+            }
+            sinterViz.addEventListener('click', toggleSinter);
+            btnSinter.addEventListener('click', toggleSinter);
+
+
+            // --- 4. Fiber Alignment Logic ---
+            const fiberStage = document.getElementById('fiber-stage-viz');
+            const btnFiber = document.getElementById('btn-fiber');
+            const fiberAlert = document.getElementById('fiber-alert');
+            let isConcentric = false;
+
+            function renderFibers() {
+                // Clear existing strands
+                fiberStage.querySelectorAll('.fiber-strand').forEach(e => e.remove());
+                
+                if(!isConcentric) {
+                    // Draw Grid
+                    for(let i=20; i<240; i+=20) {
+                        // Horizontals
+                        const h = document.createElement('div');
+                        h.className = 'fiber-strand border-t-2'; 
+                        h.style.width = '100%'; h.style.height = '0';
+                        h.style.top = i + 'px'; h.style.left = '0';
+                        fiberStage.appendChild(h);
+                        // Verticals
+                        const v = document.createElement('div');
+                        v.className = 'fiber-strand border-l-2'; 
+                        v.style.height = '100%'; v.style.width = '0';
+                        v.style.left = (i/240)*100 + '%'; v.style.top = '0';
+                        fiberStage.appendChild(v);
+                    }
+                } else {
+                    // Draw Concentric (Kevlar weave logic)
+                    for(let i=1; i<=6; i++) {
+                        const circle = document.createElement('div');
+                        circle.className = 'fiber-strand';
+                        const size = 70 + (i * 20); // Bolt hole is 70px
+                        circle.style.width = size + 'px'; circle.style.height = size + 'px';
+                        circle.style.borderRadius = '50%'; circle.style.top = '50%'; circle.style.left = '50%';
+                        circle.style.transform = 'translate(-50%, -50%)';
+                        circle.style.backgroundColor = 'transparent';
+                        fiberStage.appendChild(circle);
+                    }
+                    // Frame lines
+                    const t = document.createElement('div'); t.className='fiber-strand border-t-2'; t.style.width='100%'; t.style.top='15px'; fiberStage.appendChild(t);
+                    const b = document.createElement('div'); b.className='fiber-strand border-t-2'; b.style.width='100%'; b.style.bottom='15px'; fiberStage.appendChild(b);
+                }
+            }
+            renderFibers(); // Init
+
+            btnFiber.addEventListener('click', () => {
+                isConcentric = !isConcentric;
+                renderFibers();
+                if(isConcentric) {
+                    btnFiber.textContent = '切換至 Grid (網格) 路徑';
+                    btnFiber.classList.replace('bg-stone-800', 'bg-sky-600');
+                    btnFiber.classList.replace('hover:bg-stone-700', 'hover:bg-sky-700');
+                    fiberAlert.className = 'p-3 bg-sky-100 border border-sky-200 text-sky-800 rounded text-xs font-medium text-center transition-colors';
+                    fiberAlert.innerHTML = '<strong>狀態：Concentric (同心排列)。</strong> 纖維如 Kevlar 般環繞，完美抵抗撕裂應力。';
+                } else {
+                    btnFiber.textContent = '切換至 同心 (Concentric) 結構';
+                    btnFiber.classList.replace('bg-sky-600', 'bg-stone-800');
+                    btnFiber.classList.replace('hover:bg-sky-700', 'hover:bg-stone-700');
+                    fiberAlert.className = 'p-3 bg-red-100 border border-red-200 text-red-800 rounded text-xs font-medium text-center transition-colors';
+                    fiberAlert.innerHTML = '狀態：傳統 Grid 網格填充。力量容易將纖維從孔洞邊緣截斷撕裂。';
+                }
+            });
+
+
+            // --- 5. RF Physics (Dielectric Constant) Logic ---
+            
+            // Chart.js initialization
+            const ctxRF = document.getElementById('rfChart').getContext('2d');
+            const infillData = [0, 20, 40, 60, 80, 100];
+            // Simple effective medium approximation: Er = 1.0 (Air) to 3.0 (Solid Plastic)
+            const erData = infillData.map(v => 1.0 + (v/100)*2.0); 
+            
+            new Chart(ctxRF, {
+                type: 'line',
+                data: {
+                    labels: infillData.map(v => v + '%'),
+                    datasets: [{
+                        label: '有效介電常數 (Effective Er)',
+                        data: erData,
+                        borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        fill: true, tension: 0.3, pointBackgroundColor: '#3730a3', pointRadius: 4, borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 0.8, max: 3.2, title: { display: true, text: 'Er Value', font:{size:11} }, grid: {color: '#e0e7ff'} },
+                        x: { title: { display: true, text: 'Infill Density', font:{size:11} }, grid: {display: false} }
+                    }
+                }
+            });
+
+            // GRIN Lens Visualizer
+            const rfSlider = document.getElementById('rf-slider');
+            const rfVal = document.getElementById('rf-val');
+            const lensContainer = document.getElementById('rf-lens-container');
+            const numZones = 15; // Odd number works best for a center point
+
+            // Initialize CSS elements for Lens
+            for(let i=0; i<numZones; i++) {
+                const zone = document.createElement('div');
+                zone.className = 'rf-zone';
+                lensContainer.appendChild(zone);
+            }
+            // Initialize Wavefronts
+            const numWaves = 4;
+            for(let i=0; i<numWaves; i++) {
+                const wave = document.createElement('div');
+                wave.className = 'rf-wave';
+                wave.style.animationDelay = `${i * 0.75}s`;
+                lensContainer.appendChild(wave);
+            }
+
+            function updateGRINLens(centerInfill) {
+                const zones = lensContainer.querySelectorAll('.rf-zone');
+                const centerIdx = Math.floor(numZones / 2);
+                
+                // Update Density Backgrounds
+                zones.forEach((zone, idx) => {
+                    const distFromCenter = Math.abs(idx - centerIdx) / centerIdx; // normalized 0 to 1
+                    // Edges approach 20% infill, center approaches slider value
+                    const density = centerInfill - (distFromCenter * (centerInfill - 20));
+                    // Map density to opacity of the indigo color
+                    const opacity = Math.max(0.05, Math.min(1, density / 100));
+                    zone.style.backgroundColor = `rgba(49, 46, 129, ${opacity * 0.9})`;
+                });
+
+                // Update Wavefront Speed (simulating delay in denser medium)
+                // If infill is high, wave travels slower -> animation duration increases
+                const baseDuration = 1.5; // fastest speed (seconds)
+                const addedDelay = (centerInfill / 100) * 2.5; 
+                lensContainer.querySelectorAll('.rf-wave').forEach(wave => {
+                    wave.style.animationDuration = `${baseDuration + addedDelay}s`;
+                });
+            }
+
+            // Init values
+            updateGRINLens(80);
+
+            rfSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                rfVal.textContent = val;
+                updateGRINLens(val);
+            });
+
+        });
+    </script>
+</body>
+</html>

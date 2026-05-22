@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan³cy Forge | 教學</title>
+    <link rel="stylesheet" href="/assets/css/brand.css">
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="/assets/js/brand-engine.js"></script>
+    <style>
+        #f3f-sidebar-nav details.f3f-nav-group {
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 242, 255, 0.15);
+            border-radius: 10px;
+            background: rgba(1, 4, 9, 0.6);
+        }
+        #f3f-sidebar-nav details.f3f-nav-group > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 10px 12px;
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            color: var(--f3f-cyan);
+            font-weight: 700;
+            user-select: none;
+        }
+        #f3f-sidebar-nav details.f3f-nav-group > summary::-webkit-details-marker { display: none; }
+        .f3f-nav-sub { padding: 0 8px 10px; }
+        .f3f-nav-subtitle {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--f3f-pink);
+            margin: 8px 4px 6px;
+            opacity: 0.9;
+        }
+        .f3f-nav-sub ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 8px;
+        }
+        .f3f-nav-sub li { margin: 0 0 4px; }
+        .f3f-nav-sub a {
+            display: block;
+            padding: 7px 10px;
+            border-radius: 8px;
+            color: var(--f3f-text-muted);
+            text-decoration: none;
+            font-size: 0.84rem;
+            border: 1px solid transparent;
+        }
+        .f3f-nav-sub a:hover {
+            color: var(--f3f-cyan);
+            border-color: rgba(0, 242, 255, 0.25);
+            background: rgba(0, 242, 255, 0.06);
+        }
+        .f3f-nav-sub a.is-active {
+            color: var(--f3f-cyan);
+            border-color: rgba(255, 0, 229, 0.4);
+            background: rgba(255, 0, 229, 0.08);
+        }
+        #f3f-main-wrap {
+            padding: 18px 22px 28px;
+            overflow: auto;
+        }
+        #f3f-model-slot {
+            display: none;
+            margin-bottom: 18px;
+            border: 1px solid rgba(255, 0, 229, 0.35);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #010409;
+            min-height: 240px;
+        }
+        #f3f-model-slot.f3f-visible { display: block; }
+        model-viewer.f3f-mv {
+            width: 100%;
+            height: min(42vh, 360px);
+            background: linear-gradient(180deg, #010409, #0d1117);
+        }
+        #f3f-viewer-main.f3f-prose {
+            max-width: 880px;
+            margin: 0 auto;
+            background: var(--f3f-glass);
+            border: 1px solid var(--f3f-border);
+            border-radius: 14px;
+            padding: 28px 32px;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .f3f-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+        .f3f-muted { color: var(--f3f-text-muted); font-size: 0.85rem; }
+        .f3f-error { color: var(--f3f-pink); }
+    </style>
+</head>
+<body class="f3f-brand">
+    <div class="f3f-viewer-layout">
+        <button type="button" id="f3f-nav-backdrop" class="f3f-nav-backdrop" aria-label="關閉選單"></button>
+        <aside id="f3f-sidebar" aria-label="教學導航">
+            <h2>NAV // 分類</h2>
+            <div id="f3f-sidebar-nav">
+                <p class="f3f-muted" style="padding:8px;">載入 articles.json…</p>
+            </div>
+        </aside>
+        <div id="f3f-main-wrap">
+            <div class="f3f-toolbar">
+                <button type="button" id="f3f-nav-toggle" class="f3f-btn f3f-nav-toggle" aria-expanded="false" aria-controls="f3f-sidebar">選單</button>
+                <a class="f3f-btn f3f-neon-btn" href="/index.html">返回 Cyber Portal</a>
+                <span id="f3f-article-meta" class="f3f-muted"></span>
+            </div>
+            <div id="f3f-model-slot" aria-hidden="true">
+                <model-viewer class="f3f-mv" id="f3f-model-viewer" camera-controls auto-rotate interaction-prompt="none" shadow-intensity="1"></model-viewer>
+            </div>
+            <article id="f3f-viewer-main" class="f3f-prose">載入正文…</article>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var DEFAULT_WELCOME = "_posts/welcome.md";
+            var GROUP_ORDER = ["教學", "文章與資源", "資源", "其他"];
+            var articlesCache = [];
+
+            var navToggle = document.getElementById("f3f-nav-toggle");
+            var navBackdrop = document.getElementById("f3f-nav-backdrop");
+            var sidebarEl = document.getElementById("f3f-sidebar");
+
+            function setViewerNavOpen(open) {
+                document.body.classList.toggle("f3f-viewer-nav-open", open);
+                if (navToggle) navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+                if (sidebarEl && isMobileNav()) {
+                    sidebarEl.setAttribute("aria-hidden", open ? "false" : "true");
+                }
+            }
+
+            function isMobileNav() {
+                return window.matchMedia("(max-width: 768px)").matches;
+            }
+
+            if (navToggle) {
+                navToggle.addEventListener("click", function () {
+                    setViewerNavOpen(!document.body.classList.contains("f3f-viewer-nav-open"));
+                });
+            }
+            if (navBackdrop) {
+                navBackdrop.addEventListener("click", function () {
+                    setViewerNavOpen(false);
+                });
+            }
+            window.addEventListener("resize", function () {
+                if (!isMobileNav()) {
+                    setViewerNavOpen(false);
+                    if (sidebarEl) sidebarEl.removeAttribute("aria-hidden");
+                } else if (sidebarEl) {
+                    sidebarEl.setAttribute(
+                        "aria-hidden",
+                        document.body.classList.contains("f3f-viewer-nav-open") ? "false" : "true"
+                    );
+                }
+            });
+            if (sidebarEl) {
+                if (isMobileNav()) {
+                    sidebarEl.setAttribute("aria-hidden", "true");
+                }
+                sidebarEl.addEventListener("click", function (e) {
+                    if (isMobileNav() && e.target && e.target.closest && e.target.closest("a")) {
+                        setViewerNavOpen(false);
+                    }
+                });
+            }
+
+            function bust(u) {
+                return typeof f3fCacheBust === "function" ? f3fCacheBust(u) : u + "?v=" + Date.now();
+            }
+
+            function splitFrontMatter(raw) {
+                if (!raw || raw.trim().indexOf("---") !== 0) {
+                    return { meta: {}, body: raw || "" };
+                }
+                var end = raw.indexOf("\n---", 3);
+                if (end === -1) return { meta: {}, body: raw };
+                var yamlBlock = raw.slice(3, end).trim();
+                var body = raw.slice(end + 4).replace(/^\s+/, "");
+                var meta = {};
+                yamlBlock.split("\n").forEach(function (line) {
+                    var m = /^([A-Za-z0-9_]+):\s*(.*)$/.exec(line);
+                    if (!m) return;
+                    var val = m[2].trim();
+                    if ((val.charAt(0) === "\"" && val.charAt(val.length - 1) === "\"") ||
+                        (val.charAt(0) === "'" && val.charAt(val.length - 1) === "'")) {
+                        val = val.slice(1, -1);
+                    }
+                    meta[m[1]] = val;
+                });
+                return { meta: meta, body: body };
+            }
+
+            function resolveAssetUrl(pathStr) {
+                if (!pathStr) return null;
+                var p = String(pathStr).trim();
+                if (!p) return null;
+                if (/^https?:\/\//i.test(p)) return p;
+                if (p.charAt(0) === "/") return new URL(p, window.location.origin).href;
+                return new URL(p, new URL(".", window.location.href)).href;
+            }
+
+            function normalizeArticlePath(pathFromJson) {
+                if (!pathFromJson) return "";
+                return String(pathFromJson).replace(/^\//, "");
+            }
+
+            function setActiveNav(currentPath) {
+                var norm = normalizeArticlePath(currentPath);
+                document.querySelectorAll("#f3f-sidebar-nav a[data-article-path]").forEach(function (a) {
+                    if (a.getAttribute("data-article-path") === norm) {
+                        a.classList.add("is-active");
+                    } else {
+                        a.classList.remove("is-active");
+                    }
+                });
+            }
+
+            function showModel(glbPath) {
+                var slot = document.getElementById("f3f-model-slot");
+                var mv = document.getElementById("f3f-model-viewer");
+                if (!slot || !mv) return;
+                var url = resolveAssetUrl(glbPath);
+                if (!url) {
+                    slot.classList.remove("f3f-visible");
+                    slot.setAttribute("aria-hidden", "true");
+                    mv.removeAttribute("src");
+                    return;
+                }
+                mv.setAttribute("src", url);
+                slot.classList.add("f3f-visible");
+                slot.setAttribute("aria-hidden", "false");
+            }
+
+            function renderMarkdown(body) {
+                var main = document.getElementById("f3f-viewer-main");
+                main.innerHTML = marked.parse(body);
+                document.title =
+                    (main.querySelector("h1") && main.querySelector("h1").textContent.trim()) ||
+                    "Fan³cy Forge | 教學";
+                if (window.f3fBrandSweep) window.f3fBrandSweep(main);
+            }
+
+            function loadArticleFile(path, silentMeta) {
+                var main = document.getElementById("f3f-viewer-main");
+                var metaEl = document.getElementById("f3f-article-meta");
+                var target = resolveAssetUrl(path);
+                if (!silentMeta) metaEl.textContent = path;
+
+                var busted = bust(target);
+                fetch(busted)
+                    .then(function (res) {
+                        if (!res.ok) throw new Error("HTTP " + res.status);
+                        return res.text();
+                    })
+                    .then(function (text) {
+                        var parsed = splitFrontMatter(text);
+                        showModel(parsed.meta.glb_path);
+                        renderMarkdown(parsed.body);
+                        setActiveNav(path);
+                        history.replaceState(null, "", "?file=" + encodeURIComponent(normalizeArticlePath(path)));
+                    })
+                    .catch(function () {
+                        main.innerHTML =
+                            "<p class=\"f3f-error\">無法載入：<code>" +
+                            String(path).replace(/</g, "&lt;") +
+                            "</code></p>";
+                        showModel(null);
+                    });
+            }
+
+            function pickDefaultArticle(list) {
+                if (!list || !list.length) return null;
+                var w = list.find(function (a) {
+                    return normalizeArticlePath(a.path) === DEFAULT_WELCOME;
+                });
+                if (w) return normalizeArticlePath(w.path);
+                return normalizeArticlePath(list[0].path);
+            }
+
+            function groupArticles(list) {
+                var nested = {};
+                list.forEach(function (item) {
+                    var g = item.categoryGroup || "其他";
+                    var c = item.category || "一般";
+                    if (!nested[g]) nested[g] = {};
+                    if (!nested[g][c]) nested[g][c] = [];
+                    nested[g][c].push(item);
+                });
+                return nested;
+            }
+
+            function renderGroupedSidebar(list) {
+                var host = document.getElementById("f3f-sidebar-nav");
+                host.innerHTML = "";
+                if (!list.length) {
+                    host.innerHTML = "<p class=\"f3f-muted\" style=\"padding:8px;\">（無文章，請執行 npm run sync）</p>";
+                    return;
+                }
+                var nested = groupArticles(list);
+                var keys = Object.keys(nested).sort(function (a, b) {
+                    var ia = GROUP_ORDER.indexOf(a);
+                    var ib = GROUP_ORDER.indexOf(b);
+                    if (ia === -1) ia = 99;
+                    if (ib === -1) ib = 99;
+                    if (ia !== ib) return ia - ib;
+                    return a.localeCompare(b);
+                });
+
+                keys.forEach(function (gKey) {
+                    var det = document.createElement("details");
+                    det.className = "f3f-nav-group";
+                    det.open = true;
+                    var sum = document.createElement("summary");
+                    sum.textContent = gKey;
+                    det.appendChild(sum);
+
+                    var subcats = Object.keys(nested[gKey]).sort();
+                    subcats.forEach(function (cKey) {
+                        var wrap = document.createElement("div");
+                        wrap.className = "f3f-nav-sub";
+                        var st = document.createElement("div");
+                        st.className = "f3f-nav-subtitle";
+                        st.textContent = cKey;
+                        wrap.appendChild(st);
+                        var ul = document.createElement("ul");
+                        nested[gKey][cKey].forEach(function (item) {
+                            var p = normalizeArticlePath(item.path);
+                            var li = document.createElement("li");
+                            var a = document.createElement("a");
+                            a.href = "/viewer.html?file=" + encodeURIComponent(p);
+                            a.setAttribute("data-article-path", p);
+                            a.textContent = item.title || p;
+                            a.addEventListener("click", function (e) {
+                                e.preventDefault();
+                                loadArticleFile(p);
+                            });
+                            li.appendChild(a);
+                            ul.appendChild(li);
+                        });
+                        wrap.appendChild(ul);
+                        det.appendChild(wrap);
+                    });
+                    host.appendChild(det);
+                });
+            }
+
+            function renderSidebarError(msg) {
+                var host = document.getElementById("f3f-sidebar-nav");
+                host.innerHTML = "<p class=\"f3f-error\" style=\"padding:8px;\">" + msg + "</p>";
+            }
+
+            /** 與正文完全脫鉤：只負責側邊欄 */
+            function loadSidebarOnly() {
+                return fetch(bust("/articles.json"))
+                    .then(function (r) {
+                        if (!r.ok) throw new Error("HTTP " + r.status);
+                        return r.json();
+                    })
+                    .then(function (data) {
+                        articlesCache = (data && data.markdownArticles) || [];
+                        renderGroupedSidebar(articlesCache);
+                        return articlesCache;
+                    })
+                    .catch(function () {
+                        renderSidebarError("無法載入 articles.json（側邊欄）");
+                        articlesCache = [];
+                        return articlesCache;
+                    });
+            }
+
+            function routeArticleAfterSidebar(list) {
+                var params = new URLSearchParams(window.location.search);
+                var fileParam = params.get("file");
+                var target = fileParam ? normalizeArticlePath(fileParam) : pickDefaultArticle(list);
+
+                if (target) {
+                    loadArticleFile(target);
+                } else {
+                    document.getElementById("f3f-viewer-main").innerHTML =
+                        "<p class=\"f3f-muted\">尚無可用文章。請於 repo 加入 Markdown 後執行 <code>npm run sync</code>。</p>";
+                    tryLoadWelcomeFallback();
+                }
+            }
+
+            function tryLoadWelcomeFallback() {
+                fetch(bust(resolveAssetUrl(DEFAULT_WELCOME)))
+                    .then(function (r) {
+                        if (!r.ok) throw new Error();
+                        return r.text();
+                    })
+                    .then(function (text) {
+                        var parsed = splitFrontMatter(text);
+                        showModel(parsed.meta.glb_path);
+                        renderMarkdown(parsed.body);
+                    })
+                    .catch(function () {});
+            }
+
+            loadSidebarOnly().then(routeArticleAfterSidebar);
+        });
+    </script>
+</body>
+</html>

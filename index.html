@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan³cy Forge | Cyber Portal</title>
+    <link rel="stylesheet" href="/assets/css/brand.css">
+    <script src="/assets/js/brand-engine.js"></script>
+    <script src="/assets/js/search-engine.js" defer></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        .f3f-portal {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 20px 48px;
+            box-sizing: border-box;
+            position: relative;
+            overflow-x: hidden;
+        }
+        /* 背景網格 */
+        .f3f-portal::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0, 242, 255, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.07) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 20%, transparent 70%);
+            z-index: 0;
+        }
+        .f3f-portal-inner {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 920px;
+        }
+        .f3f-logo-text {
+            font-size: clamp(1.6rem, 5vw, 2.4rem);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            margin: 18px 0 8px;
+        }
+        .f3f-tagline {
+            color: var(--f3f-text-muted);
+            font-size: 0.95rem;
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+        .f3f-articles-section {
+            margin-top: 36px;
+        }
+        .f3f-articles-section h2 {
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: var(--f3f-pink);
+            margin: 0 0 16px;
+            text-align: center;
+        }
+        .f3f-hero-model {
+            margin: 28px auto 0;
+            max-width: 560px;
+            border: 1px solid rgba(255, 0, 229, 0.25);
+            border-radius: 12px;
+            overflow: hidden;
+            background: #010409;
+        }
+        model-viewer.f3f-home-mv {
+            width: 100%;
+            height: 240px;
+        }
+        .f3f-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+    </style>
+</head>
+<body class="f3f-brand">
+    <div class="f3f-portal">
+        <div class="f3f-portal-inner">
+            <div class="f3f-hero-stage" aria-label="品牌主視覺">
+                <img src="/assets/images/mochi.webp" alt="" class="f3f-hero-float f3f-hero-float--left" width="140" height="140" decoding="async" fetchpriority="low">
+                <div class="f3f-hero-center">
+                    <img src="/assets/images/LOGO.webp" alt="Fan³cy Forge" class="f3f-hero-logo-core" width="200" height="200" decoding="async" fetchpriority="high">
+                    <div class="f3f-logo-text f3f-neon-title">FAN³CY FORGE</div>
+                    <p class="f3f-tagline">Data-driven 教學 · Markdown + 3D 預覽 · 單一閱讀器入口</p>
+                </div>
+                <img src="/assets/images/kimchi.webp" alt="" class="f3f-hero-float f3f-hero-float--right" width="140" height="140" decoding="async" fetchpriority="low">
+            </div>
+
+            <div id="f3f-hero-model-wrap" class="f3f-hero-model" style="display:none;">
+                <div id="f3f-mv-picker" class="f3f-mv-picker">
+                    <label for="f3f-glb-select">預覽模型</label>
+                    <select id="f3f-glb-select" aria-label="選擇要預覽的 3D 模型"></select>
+                </div>
+                <model-viewer id="f3f-home-mv" class="f3f-home-mv" camera-controls auto-rotate interaction-prompt="none" shadow-intensity="1"></model-viewer>
+            </div>
+
+            <div class="f3f-actions">
+                <a class="f3f-btn f3f-neon-btn" href="/viewer.html">進入教學閱讀器</a>
+                <a class="f3f-btn" href="/assets/index.html">開源架構庫</a>
+                <a class="f3f-btn" href="/assignments/index.html">參考圖片</a>
+            </div>
+
+            <div class="f3f-search-section" id="f3f-search-section">
+                <div class="f3f-search-row">
+                    <label class="f3f-visually-hidden" for="f3f-search-input">搜尋教學與資源</label>
+                    <input type="search" id="f3f-search-input" class="f3f-search-input" placeholder="搜尋標題、路徑、分類…" autocomplete="off" enterkeyhint="search">
+                    <button type="button" class="f3f-search-clear" id="f3f-search-clear">清除</button>
+                </div>
+                <p class="f3f-search-empty" id="f3f-search-empty" hidden>🔴 搵唔到相關資源，試吓換個關鍵字？</p>
+            </div>
+
+            <section class="f3f-articles-section" aria-labelledby="modules-heading">
+                <h2 id="modules-heading">TEACHING MODULES</h2>
+                <div id="f3f-article-grid"><p class="f3f-muted" style="text-align:center;width:100%;">載入 articles.json…</p></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+        function normalizeArticlePath(pathFromJson) {
+            if (!pathFromJson) return "";
+            return String(pathFromJson).replace(/^\//, "");
+        }
+
+        function bust(url) {
+            return typeof f3fCacheBust === "function" ? f3fCacheBust(url) : url + "?v=" + Date.now();
+        }
+
+        function fileNameFromPath(p) {
+            if (!p) return "";
+            var s = String(p).replace(/^\//, "");
+            var i = s.lastIndexOf("/");
+            return i >= 0 ? s.slice(i + 1) : s;
+        }
+
+        fetch(bust("/articles.json"))
+            .then(function (r) {
+                if (!r.ok) throw new Error("articles");
+                return r.json();
+            })
+            .then(function (data) {
+                var list = (data && data.markdownArticles) || [];
+                var grid = document.getElementById("f3f-article-grid");
+                grid.innerHTML = "";
+                if (!list.length) {
+                    grid.innerHTML = "<p class=\"f3f-muted\" style=\"text-align:center;\">尚無文章 — 請將 .md 放入 3Dlectures/ 並執行 npm run sync</p>";
+                    return;
+                }
+                list.forEach(function (item) {
+                    var p = normalizeArticlePath(item.path);
+                    var a = document.createElement("a");
+                    a.href = "/viewer.html?file=" + encodeURIComponent(p);
+                    a.innerHTML =
+                        "<strong>" +
+                        (item.title || p).replace(/</g, "&lt;") +
+                        "</strong>" +
+                        '<span class="sub">' +
+                        p.replace(/</g, "&lt;") +
+                        "</span>";
+                    grid.appendChild(a);
+                });
+            })
+            .catch(function () {
+                document.getElementById("f3f-article-grid").innerHTML =
+                    "<p style=\"color:var(--f3f-pink);text-align:center;\">無法載入 articles.json</p>";
+            });
+
+        fetch(bust("/config.json"))
+            .then(function (r) {
+                return r.ok ? r.json() : null;
+            })
+            .then(function (cfg) {
+                if (!cfg || !cfg.modelViewer || !cfg.modelViewer.src) return;
+                var wrap = document.getElementById("f3f-hero-model-wrap");
+                var mv = document.getElementById("f3f-home-mv");
+                var sel = document.getElementById("f3f-glb-select");
+                if (!wrap || !mv || !sel) return;
+                if (cfg.modelViewer.enabled === false) return;
+
+                var list = cfg.modelViewer.availableGlbs;
+                if (!list || !list.length) {
+                    list = [cfg.modelViewer.src];
+                }
+
+                sel.innerHTML = "";
+                list.forEach(function (url) {
+                    var opt = document.createElement("option");
+                    opt.value = url;
+                    opt.textContent = fileNameFromPath(url);
+                    sel.appendChild(opt);
+                });
+
+                var initial = cfg.modelViewer.src;
+                if (list.indexOf(initial) === -1) {
+                    initial = list[0];
+                }
+                sel.value = initial;
+                mv.setAttribute("src", initial);
+
+                sel.addEventListener("change", function () {
+                    mv.setAttribute("src", sel.value);
+                });
+
+                if (cfg.modelViewer.environmentImage) {
+                    mv.setAttribute("environment-image", cfg.modelViewer.environmentImage);
+                }
+                wrap.style.display = "block";
+            })
+            .catch(function () {});
+        });
+    </script>
+</body>
+</html>
