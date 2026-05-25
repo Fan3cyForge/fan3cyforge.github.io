@@ -101,6 +101,10 @@
     </style>
 </head>
 <body class="f3f-brand">
+    <div id="f3f-toc-container" style="display:none; margin-bottom: 24px;">
+        <h2>TOC // 本頁目錄</h2>
+        <div id="f3f-toc-nav"></div>
+    </div>
     <div class="f3f-viewer-layout">
         <button type="button" id="f3f-nav-backdrop" class="f3f-nav-backdrop" aria-label="關閉選單"></button>
         <aside id="f3f-sidebar" aria-label="教學導航">
@@ -246,10 +250,100 @@
             function renderMarkdown(body) {
                 var main = document.getElementById("f3f-viewer-main");
                 main.innerHTML = marked.parse(body);
-                document.title =
-                    (main.querySelector("h1") && main.querySelector("h1").textContent.trim()) ||
-                    "Fan³cy Forge | 教學";
+                document.title = (main.querySelector("h1") && main.querySelector("h1").textContent.trim()) || "Fan³cy Forge | 教學";
+
+                enhanceMarkdownDOM(main);
                 if (window.f3fBrandSweep) window.f3fBrandSweep(main);
+            }
+
+            function enhanceMarkdownDOM(main) {
+                // 1. Code Copy Button
+                var pres = main.querySelectorAll("pre");
+                pres.forEach(function (pre) {
+                    var wrapper = document.createElement("div");
+                    wrapper.className = "f3f-code-wrapper";
+                    pre.parentNode.insertBefore(wrapper, pre);
+                    var btn = document.createElement("button");
+                    btn.className = "f3f-code-copy-btn";
+                    btn.textContent = "COPY";
+                    btn.onclick = function () {
+                        navigator.clipboard.writeText(pre.textContent).then(function () {
+                            btn.textContent = "COPIED!";
+                            btn.style.color = "var(--f3f-pink)";
+                            btn.style.borderColor = "var(--f3f-pink)";
+                            setTimeout(function () {
+                                btn.textContent = "COPY";
+                                btn.style.color = "";
+                                btn.style.borderColor = "";
+                            }, 2000);
+                        });
+                    };
+                    wrapper.appendChild(btn);
+                    wrapper.appendChild(pre);
+                });
+
+                // 2. Auto TOC Generation
+                var tocContainer = document.getElementById("f3f-toc-container");
+                var tocNav = document.getElementById("f3f-toc-nav");
+                var headers = main.querySelectorAll("h2");
+
+                if (headers.length === 0) {
+                    if (tocContainer) tocContainer.style.display = "none";
+                    return;
+                }
+
+                if (tocContainer) tocContainer.style.display = "block";
+                if (tocNav) {
+                    tocNav.innerHTML = "";
+                    var ul = document.createElement("ul");
+                    ul.className = "f3f-toc-list";
+                    headers.forEach(function (h2, index) {
+                        var id = h2.id || "f3f-chap-" + index;
+                        h2.id = id;
+                        var li = document.createElement("li");
+                        li.className = "f3f-toc-item";
+                        var a = document.createElement("a");
+                        a.className = "f3f-toc-link";
+                        a.href = "#" + id;
+                        a.textContent = h2.textContent.replace(/^[\s/]+/, "");
+                        a.onclick = function (e) {
+                            e.preventDefault();
+                            h2.scrollIntoView({ behavior: "smooth" });
+                        };
+                        li.appendChild(a);
+                        ul.appendChild(li);
+                    });
+                    tocNav.appendChild(ul);
+                }
+            }
+
+            var scroller = document.getElementById("f3f-main-wrap");
+            if (scroller) {
+                scroller.addEventListener("scroll", function () {
+                    var headers = document.querySelectorAll("#f3f-viewer-main h2");
+                    var links = document.querySelectorAll(".f3f-toc-link");
+                    var currentId = "";
+
+                    headers.forEach(function (h) {
+                        var rect = h.getBoundingClientRect();
+                        if (rect.top < 120) {
+                            currentId = h.id;
+                        }
+                    });
+
+                    links.forEach(function (link) {
+                        if (currentId && link.getAttribute("href") === "#" + currentId) {
+                            var wasActive = link.classList.contains("active");
+                            link.classList.add("active");
+
+                            if (!wasActive && window.innerWidth <= 768) {
+                                link.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+                            }
+                        } else {
+                            link.classList.remove("active");
+                        }
+                    });
+                });
             }
 
             function loadArticleFile(path, silentMeta) {

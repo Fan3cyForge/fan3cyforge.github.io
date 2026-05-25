@@ -6,7 +6,7 @@
     <title>Fan³cy Forge | Cyber Portal</title>
     <link rel="stylesheet" href="/assets/css/brand.css">
     <script src="/assets/js/brand-engine.js"></script>
-    <script src="/assets/js/search-engine.js" defer></script>
+    <!-- <script src="/assets/js/search-engine.js" defer></script> -->
     <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
     <style>
         .f3f-portal {
@@ -90,7 +90,7 @@
                 <div class="f3f-hero-center">
                     <img src="/assets/images/LOGO.webp" alt="Fan³cy Forge" class="f3f-hero-logo-core" width="200" height="200" decoding="async" fetchpriority="high">
                     <div class="f3f-logo-text f3f-neon-title">FAN³CY FORGE</div>
-                    <p class="f3f-tagline">Data-driven 教學 · Markdown + 3D 預覽 · 單一閱讀器入口</p>
+                    <p class="f3f-tagline">Data-driven · Markdown · 3D 預覽</p>
                 </div>
                 <img src="/assets/images/kimchi.webp" alt="" class="f3f-hero-float f3f-hero-float--right" width="140" height="140" decoding="async" fetchpriority="low">
             </div>
@@ -109,13 +109,19 @@
                 <a class="f3f-btn" href="/assignments/index.html">參考圖片</a>
             </div>
 
-            <div class="f3f-search-section" id="f3f-search-section">
-                <div class="f3f-search-row">
-                    <label class="f3f-visually-hidden" for="f3f-search-input">搜尋教學與資源</label>
-                    <input type="search" id="f3f-search-input" class="f3f-search-input" placeholder="搜尋標題、路徑、分類…" autocomplete="off" enterkeyhint="search">
-                    <button type="button" class="f3f-search-clear" id="f3f-search-clear">清除</button>
-                </div>
-                <p class="f3f-search-empty" id="f3f-search-empty" hidden>🔴 搵唔到相關資源，試吓換個關鍵字？</p>
+            <div class="f3f-ai-prompt-box">
+                <div class="badge">// OPEN ARCHITECTURE / AI 3D PRINTING LOGIC</div>
+                <ul>
+                    <li>「上一代 overhang 失敗」，自動喺 prompt 要求「減少懸垂角度」或者「增加底部支撐面積」</li>
+                    <li>AI 唔單止「睇」到拉絲，仲可以讀取當下打印緊第幾層 (Z-height)，從而決定係降低 flow rate，定係直接 kill print 止損</li>
+                </ul>
+            </div>
+
+            <div class="f3f-topic-tabs" id="f3f-topic-tabs">
+                <button type="button" class="f3f-topic-btn active" data-topic="all">全部教學</button>
+                <button type="button" class="f3f-topic-btn" data-topic="Blender">Blender</button>
+                <button type="button" class="f3f-topic-btn" data-topic="3DPrint">3D 打印 (3DPrint)</button>
+                <button type="button" class="f3f-topic-btn" data-topic="_html_archive">HTML 歸檔</button>
             </div>
 
             <section class="f3f-articles-section" aria-labelledby="modules-heading">
@@ -143,6 +149,42 @@
             return i >= 0 ? s.slice(i + 1) : s;
         }
 
+        function getActiveTopic() {
+            var active = document.querySelector(".f3f-topic-btn.active");
+            return active ? active.getAttribute("data-topic") || "all" : "all";
+        }
+
+        function applyTopicFilter(topic) {
+            var grid = document.getElementById("f3f-article-grid");
+            if (!grid) return;
+            var links = grid.querySelectorAll("a");
+            links.forEach(function (a) {
+                if (topic === "all") {
+                    a.style.display = "";
+                    return;
+                }
+                var sub = a.querySelector(".sub");
+                var pathText = sub ? sub.textContent : "";
+                a.style.display = pathText.indexOf(topic) !== -1 ? "" : "none";
+            });
+        }
+
+        function initTopicTabs() {
+            var tabs = document.getElementById("f3f-topic-tabs");
+            if (!tabs) return;
+            tabs.querySelectorAll(".f3f-topic-btn").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    tabs.querySelectorAll(".f3f-topic-btn").forEach(function (b) {
+                        b.classList.remove("active");
+                    });
+                    btn.classList.add("active");
+                    applyTopicFilter(btn.getAttribute("data-topic") || "all");
+                });
+            });
+        }
+
+        initTopicTabs();
+
         fetch(bust("/articles.json"))
             .then(function (r) {
                 if (!r.ok) throw new Error("articles");
@@ -169,6 +211,7 @@
                         "</span>";
                     grid.appendChild(a);
                 });
+                applyTopicFilter(getActiveTopic());
             })
             .catch(function () {
                 document.getElementById("f3f-article-grid").innerHTML =

@@ -740,3 +740,271 @@ body.f3f-viewer-nav-open .f3f-nav-backdrop {
         display: none !important;
     }
 }
+
+/* AI 提示框樣式 - Terminal 風格 */
+.f3f-ai-prompt-box {
+    border: 1px dashed var(--f3f-pink);
+    background: rgba(255, 0, 229, 0.05);
+    padding: 16px;
+    border-radius: 10px;
+    margin: 20px 0;
+    box-shadow: inset 0 0 10px rgba(255, 0, 229, 0.1);
+}
+.f3f-ai-prompt-box ul {
+    margin: 8px 0 0 0;
+    padding-left: 20px;
+    color: var(--f3f-text-muted);
+}
+.f3f-ai-prompt-box li {
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+}
+.f3f-ai-prompt-box .badge {
+    color: var(--f3f-pink);
+    font-weight: bold;
+    letter-spacing: 0.05em;
+}
+
+/* 分類篩選按鈕 */
+.f3f-topic-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 24px 0;
+}
+.f3f-topic-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--f3f-cyan);
+    background: rgba(1, 4, 9, 0.6);
+    color: var(--f3f-cyan);
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: all 0.2s ease;
+}
+.f3f-topic-btn.active, .f3f-topic-btn:hover {
+    background: var(--f3f-cyan);
+    color: var(--f3f-bg);
+    box-shadow: 0 0 12px var(--f3f-cyan);
+}
+
+/* 3D Lightbox Modal */
+.f3f-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.f3f-modal-content {
+    position: relative;
+    width: 100%;
+    max-width: 800px;
+    height: 70vh;
+    background: #010409;
+    border: 2px solid var(--f3f-cyan);
+    border-radius: 16px;
+    box-shadow: 0 0 32px rgba(0, 242, 255, 0.25);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.f3f-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: transparent;
+    border: none;
+    color: var(--f3f-pink);
+    font-size: 1.8rem;
+    cursor: pointer;
+    z-index: 10;
+    text-shadow: 0 0 8px var(--f3f-pink);
+}
+.f3f-modal-close:hover {
+    color: var(--f3f-text);
+}
+.f3f-modal-viewer {
+    width: 100%;
+    flex: 1;
+    background: transparent;
+}
+.f3f-modal-filename {
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.5);
+    border-top: 1px solid rgba(0, 242, 255, 0.15);
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.82rem;
+    color: var(--f3f-cyan);
+    text-align: center;
+}
+
+/* === 閱讀器排版優化 === */
+.f3f-prose {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: var(--f3f-text);
+    letter-spacing: 0.03em;
+}
+.f3f-prose h2 {
+    font-size: 1.5rem;
+    color: var(--f3f-cyan);
+    margin-top: 2.2rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px dashed rgba(0, 242, 255, 0.2);
+    position: relative;
+    scroll-margin-top: 20px;
+}
+.f3f-prose h2::before {
+    content: "// ";
+    color: var(--f3f-pink);
+    text-shadow: 0 0 8px var(--f3f-pink);
+    font-weight: bold;
+    margin-right: 4px;
+}
+.f3f-prose h3 {
+    font-size: 1.22rem;
+    color: var(--f3f-orange);
+    margin-top: 1.8rem;
+    margin-bottom: 0.8rem;
+    scroll-margin-top: 20px;
+}
+.f3f-prose p, .f3f-prose ul, .f3f-prose ol {
+    margin-bottom: 1.2rem;
+}
+
+/* === 代碼塊與複製按鈕 === */
+.f3f-code-wrapper {
+    position: relative;
+    margin: 1.5rem 0;
+}
+.f3f-prose pre {
+    margin: 0 !important;
+    padding: 24px 16px 16px !important;
+}
+.f3f-code-copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    background: rgba(13, 17, 23, 0.9);
+    border: 1px solid var(--f3f-cyan);
+    color: var(--f3f-cyan);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 10;
+}
+.f3f-code-copy-btn:hover {
+    background: var(--f3f-cyan);
+    color: var(--f3f-bg);
+    box-shadow: 0 0 8px var(--f3f-cyan);
+}
+
+/* === 本頁目錄(TOC)樣式 === */
+.f3f-toc-list {
+    list-style: none;
+    padding: 0 8px 10px;
+    margin: 0;
+}
+.f3f-toc-item {
+    margin-bottom: 4px;
+}
+.f3f-toc-link {
+    display: block;
+    color: var(--f3f-text-muted);
+    text-decoration: none;
+    font-size: 0.84rem;
+    transition: all 0.2s ease;
+    border-left: 2px solid transparent;
+    padding: 4px 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-radius: 0 8px 8px 0;
+}
+.f3f-toc-link:hover, .f3f-toc-link.active {
+    color: var(--f3f-pink);
+    border-left-color: var(--f3f-pink);
+    background: rgba(255, 0, 229, 0.08);
+}
+
+/* === Mobile 專屬頂部橫向 TOC 導航條 === */
+@media (max-width: 768px) {
+    /* 當在手機版時，將 TOC 容器抽離出來，固定在頂部 Toolbar 下方 */
+    #f3f-toc-container {
+        position: fixed !important;
+        top: 60px; /* 請根據你實際頂部 Toolbar 的高度做微調 */
+        left: 0;
+        width: 100vw;
+        z-index: 999;
+        background: rgba(13, 17, 23, 0.92) !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0, 242, 255, 0.2) !important;
+        margin-bottom: 0 !important;
+        padding: 6px 10px !important;
+        box-sizing: border-box;
+    }
+
+    /* 手機版隱藏 "TOC // 本頁目錄" 標題，節省空間 */
+    #f3f-toc-container h2 {
+        display: none !important;
+    }
+
+    /* 將目錄列表改為不換行的橫向彈性佈局 */
+    .f3f-toc-list {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        gap: 8px;
+        padding: 4px 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 隱藏滾動條，保持簡潔介面 */
+    .f3f-toc-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .f3f-toc-item {
+        margin-bottom: 0 !important;
+        flex: 0 0 auto; /* 防止被壓縮 */
+    }
+
+    /* 將超連結改成膠囊按鈕 (Capsule) 風格 */
+    .f3f-toc-link {
+        font-size: 0.8rem !important;
+        padding: 4px 12px !important;
+        border-left: none !important;
+        border: 1px solid rgba(230, 237, 243, 0.2) !important;
+        border-radius: 20px !important;
+        background: rgba(1, 4, 9, 0.6);
+        color: var(--f3f-text-muted) !important;
+    }
+
+    /* 手機版高亮狀態：霓虹發光膠囊 */
+    .f3f-toc-link.active {
+        color: var(--f3f-pink) !important;
+        border-color: var(--f3f-pink) !important;
+        background: rgba(255, 0, 229, 0.12) !important;
+        box-shadow: 0 0 8px rgba(255, 0, 229, 0.3);
+        text-shadow: 0 0 4px var(--f3f-pink);
+    }
+
+    /* 為右側主要內容區加上 padding-top，避免內容被頂部固定 TOC 遮擋 */
+    #f3f-viewer-main {
+        padding-top: 50px !important;
+    }
+}

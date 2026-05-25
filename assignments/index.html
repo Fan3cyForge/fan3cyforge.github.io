@@ -7,12 +7,13 @@
     <link rel="stylesheet" href="/assets/css/brand.css">
     <script src="/assets/js/brand-engine.js"></script>
     <script src="/assets/js/search-engine.js" defer></script>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 </head>
 <body class="f3f-brand">
     <div class="f3f-ref-page">
         <a class="f3f-btn" href="/index.html">返回主頁</a>
         <h1 class="f3f-neon-title" style="margin:20px 0 0;font-size:clamp(1.4rem,4vw,1.85rem);">REFERENCE // 參考圖片</h1>
-        <p class="f3f-muted" style="margin:12px 0 0;max-width:640px;line-height:1.7;">以下為 <code>assets/images/</code> 內所有 WebP（由同步腳本產生之 <code>reference-images.json</code>）。點圖可開啟原檔。</p>
+        <p class="f3f-muted" style="margin:12px 0 0;max-width:640px;line-height:1.7;">以下為 <code>assets/images/</code> 內所有 WebP（由同步腳本產生之 <code>reference-images.json</code>）。點擊縮圖可彈出對應 3D GLB 預覽。</p>
         <div class="f3f-search-section" id="f3f-search-section" style="margin-top:20px;">
             <div class="f3f-search-row">
                 <label class="f3f-visually-hidden" for="f3f-search-input">搜尋參考圖片檔名</label>
@@ -29,12 +30,62 @@
             </div>
         </div>
     </div>
+
+    <div id="f3f-glb-modal" class="f3f-modal">
+        <div class="f3f-modal-content">
+            <button type="button" class="f3f-modal-close" id="f3f-modal-close" aria-label="關閉 3D 預覽">&times;</button>
+            <model-viewer id="f3f-modal-mv" class="f3f-modal-viewer" auto-rotate camera-controls ar shadow-intensity="1"></model-viewer>
+            <div id="f3f-modal-filename" class="f3f-modal-filename"></div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             var host = document.getElementById("f3f-ref-grid-host");
+            var modal = document.getElementById("f3f-glb-modal");
+            var mv = document.getElementById("f3f-modal-mv");
+            var nameEl = document.getElementById("f3f-modal-filename");
+            var closeBtn = document.getElementById("f3f-modal-close");
+
             function bust(u) {
                 return typeof f3fCacheBust === "function" ? f3fCacheBust(u) : u + "?v=" + Date.now();
             }
+
+            function webpToGlb(webpSrc) {
+                return String(webpSrc)
+                    .replace(/\/assets\/images\/Sample\//, "/assets/glb/")
+                    .replace(/\.webp$/i, ".glb");
+            }
+
+            function fileNameFromPath(p) {
+                if (!p) return "";
+                var s = String(p);
+                var i = s.lastIndexOf("/");
+                return i >= 0 ? s.slice(i + 1) : s;
+            }
+
+            function openGlbModal(glbPath) {
+                if (!modal || !mv) return;
+                mv.setAttribute("src", glbPath);
+                if (nameEl) nameEl.textContent = fileNameFromPath(glbPath);
+                modal.style.display = "flex";
+            }
+
+            function closeGlbModal() {
+                if (!modal) return;
+                modal.style.display = "none";
+                if (mv) mv.setAttribute("src", "");
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", closeGlbModal);
+            }
+            if (modal) {
+                modal.addEventListener("click", function (e) {
+                    if (e.target === modal) closeGlbModal();
+                });
+            }
+
             fetch(bust("/reference-images.json"))
                 .then(function (r) {
                     if (!r.ok) throw new Error("ref");
@@ -49,9 +100,11 @@
                     }
                     imgs.forEach(function (src) {
                         var a = document.createElement("a");
-                        a.href = src;
-                        a.target = "_blank";
-                        a.rel = "noopener noreferrer";
+                        a.href = "#";
+                        a.addEventListener("click", function (e) {
+                            e.preventDefault();
+                            openGlbModal(webpToGlb(src));
+                        });
                         var img = document.createElement("img");
                         img.src = src;
                         img.alt = "";
