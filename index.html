@@ -230,10 +230,8 @@
                 if (!wrap || !mv || !sel) return;
                 if (cfg.modelViewer.enabled === false) return;
 
-                var list = cfg.modelViewer.availableGlbs;
-                if (!list || !list.length) {
-                    list = [cfg.modelViewer.src];
-                }
+                // 強制覆寫首頁 3D 模型清單，只保留 kimchi / mochi 兩個選項
+                var list = ["/assets/glb/kimchi.glb", "/assets/glb/mochi.glb"];
 
                 sel.innerHTML = "";
                 list.forEach(function (url) {
@@ -243,7 +241,8 @@
                     sel.appendChild(opt);
                 });
 
-                var initial = cfg.modelViewer.src;
+                // 預設載入 kimchi.glb，如不存在則退回第一個選項
+                var initial = "/assets/glb/kimchi.glb";
                 if (list.indexOf(initial) === -1) {
                     initial = list[0];
                 }

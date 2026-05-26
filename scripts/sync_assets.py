@@ -12,24 +12,70 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# 共用 WebP 轉換（CursorAI/convert_images.py，路徑錨定 Fan3cyForge 工作區）
-_FORGE_ROOT = Path(__file__).resolve().parent.parent.parent
-_CURSOR_AI = _FORGE_ROOT / "CursorAI"
-if str(_CURSOR_AI) not in sys.path:
-    sys.path.insert(0, str(_CURSOR_AI))
-from convert_images import (  # noqa: E402
-    DEFAULT_DEST_DIR,
-    DEFAULT_IMAGES_DIR,
-    DEFAULT_QUALITY,
-    DEFAULT_SOURCE_DIR,
-    convert_images_dir_to_webp,
-    convert_source_dir_to_dest_webp,
-    iter_raster_image_files,
-)
+from PIL import Image
+
+# 本地常數
+DEFAULT_QUALITY = 90
+DEFAULT_IMAGES_DIR = Path(__file__).resolve().parent.parent / "assets" / "images"
+
+
+def convert_source_dir_to_dest_webp(src_dir: Path, dest_dir: Path, quality: int = 90):
+    """將來源資料夾內的所有 PNG 轉成 WebP 輸出到目標資料夾"""
+    if not src_dir.is_dir():
+        print(f"[warn] 來源路徑不存在: {src_dir}")
+        return 0, 0
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    ok, fail = 0, 0
+    for p in src_dir.glob("*.png"):
+        try:
+            img = Image.open(p)
+            out_path = dest_dir / (p.stem + ".webp")
+            img.save(out_path, "WEBP", quality=quality)
+            ok += 1
+        except Exception as e:
+            print(f"[error] 轉換失敗 {p.name}: {e}")
+            fail += 1
+    return ok, fail
+
+
+def convert_images_dir_to_webp(images_dir: Path, quality: int = 90):
+    """就地轉換資料夾內所有殘留的 PNG/JPG/JPEG 為 WebP"""
+    if not images_dir.is_dir():
+        return 0, 0
+    ok, fail = 0, 0
+    for ext in ["*.png", "*.jpg", "*.jpeg"]:
+        for p in images_dir.rglob(ext):
+            try:
+                img = Image.open(p)
+                out_path = p.with_suffix(".webp")
+                img.save(out_path, "WEBP", quality=quality)
+                ok += 1
+            except Exception as e:
+                print(f"[error] 轉換失敗 {p}: {e}", file=sys.stderr)
+                fail += 1
+    return ok, fail
+
+
+def count_raster_images(directory: Path) -> int:
+    """統計目錄內待轉換的點陣圖數量（含子目錄）。"""
+    if not directory.is_dir():
+        return 0
+    total = 0
+    for ext in ("*.png", "*.jpg", "*.jpeg"):
+        total += sum(1 for _ in directory.rglob(ext))
+    return total
+
+
+def count_source_pngs(src_dir: Path) -> int:
+    """統計來源目錄頂層 PNG 數量（與 convert_source_dir_to_dest_webp 一致）。"""
+    if not src_dir.is_dir():
+        return 0
+    return sum(1 for _ in src_dir.glob("*.png"))
 
 
 def repo_root() -> Path:
@@ -38,8 +84,23 @@ def repo_root() -> Path:
 
 
 def default_images_root() -> Path:
-    """GitHub Pages 圖片目錄；與 CursorAI/convert_images.py 預設一致。"""
+    """GitHub Pages 圖片目錄。"""
     return DEFAULT_IMAGES_DIR.resolve()
+
+
+# Requirement 1: 2D/3D Asset Pipeline 固定來源與輸出絕對路徑
+PINNED_SOURCE_DIR = Path(
+    r"C:\Users\User\Desktop\Fan3cyForge\Fan3cyAssets\assets\images\2dto3d"
+)
+PINNED_DEST_DIR = Path(
+    r"C:\Users\User\Desktop\Fan3cyForge\fan3cyforge.github.io\assets\images\Sample"
+)
+PINNED_DONE_PNG_DIR = Path(
+    r"C:\Users\User\Desktop\Fan3cyForge\Fan3cyAssets\assets\images\已完成PNG"
+)
+
+# Requirement 3: 首頁 3D 預覽僅保留 kimchi/mochi
+CURATED_PREVIEW_GLB_WEB_PATHS = ["/assets/glb/kimchi.glb", "/assets/glb/mochi.glb"]
 
 
 def strip_yaml_front_matter(text: str) -> str:
@@ -164,18 +225,16 @@ def scan_glb(root: Path, base: Path) -> list[str]:
     if not base.is_dir():
         return []
     paths = sorted(base.rglob("*.glb"))
-    return [posix_rel(p, root) for p in paths if p.is_file()]
-
-
-def scan_webp_images(root: Path, base: Path) -> list[str]:
-    """assets/images 內所有 .webp（路徑相對 repo root）。"""
-    if not base.is_dir():
-        return []
-    paths: list[Path] = []
-    for path in base.rglob("*"):
-        if path.is_file() and path.suffix.lower() == ".webp":
-            paths.append(path)
-    return [posix_rel(p, root) for p in sorted(paths)]
+    out: list[str] = []
+    for p in paths:
+        if not p.is_file():
+            continue
+        rel = posix_rel(p, root)
+        # Requirement 3: 排除 assets/glb/simple/ 內檔案
+        if rel.startswith("assets/glb/simple/"):
+            continue
+        out.append(rel)
+    return out
 
 
 def load_json(path: Path) -> dict | None:
@@ -217,13 +276,9 @@ def merge_config(
     mv_prev = base.get("modelViewer")
     mv: dict = dict(mv_prev) if isinstance(mv_prev, dict) else {}
 
-    web_glbs = ["/" + p.replace("\\", "/") for p in glb_paths]
-    mv["availableGlbs"] = web_glbs
-
-    if glb_paths:
-        mv["src"] = "/" + glb_paths[0].replace("\\", "/")
-    else:
-        mv.setdefault("src", FALLBACK_GLB_SRC)
+    # Requirement 3: 強制定義首頁可預覽模型，不依賴掃描結果
+    mv["availableGlbs"] = list(CURATED_PREVIEW_GLB_WEB_PATHS)
+    mv["src"] = "/assets/glb/kimchi.glb"
 
     mv.setdefault("enabled", True)
     mv.setdefault("environmentImage", "https://modelviewer.dev/shared-assets/environments/moon_1k.hdr")
@@ -257,13 +312,13 @@ def main() -> None:
         "--source-dir",
         type=Path,
         default=None,
-        help=f"2dto3d PNG source (default: {DEFAULT_SOURCE_DIR})",
+        help="(ignored) pinned by pipeline requirement",
     )
     parser.add_argument(
         "--dest-dir",
         type=Path,
         default=None,
-        help=f"Sample WebP destination (default: {DEFAULT_DEST_DIR})",
+        help="(ignored) pinned by pipeline requirement",
     )
     parser.add_argument(
         "--images-dir",
@@ -295,36 +350,59 @@ def main() -> None:
 
     glb_paths = scan_glb(root, glb_root)
 
-    source_dir = (args.source_dir or DEFAULT_SOURCE_DIR).resolve()
-    dest_dir = (args.dest_dir or DEFAULT_DEST_DIR).resolve()
+    source_dir = PINNED_SOURCE_DIR.resolve()
+    dest_dir = PINNED_DEST_DIR.resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
-    src_pending = iter_raster_image_files(source_dir) if source_dir.is_dir() else []
+    src_pending = count_source_pngs(source_dir)
     print(
-        f"[..] 2dto3d→Sample：{source_dir} → {dest_dir}（{len(src_pending)} 張, q={DEFAULT_QUALITY}）…"
+        f"[..] 2dto3d→Sample：{source_dir} → {dest_dir}（{src_pending} 張, q={DEFAULT_QUALITY}）…"
     )
     conv_ok, conv_fail = (
-        convert_source_dir_to_dest_webp(
-            source_dir, dest_dir, quality=DEFAULT_QUALITY, delete_source=False
-        )
+        convert_source_dir_to_dest_webp(source_dir, dest_dir, quality=DEFAULT_QUALITY)
         if src_pending
         else (0, 0)
     )
     print(f"[ok] 2dto3d→Sample WebP：成功 {conv_ok}，失敗 {conv_fail}")
 
+    # === 增強功能：自動歸檔已處理的原始 PNG ===
+    if PINNED_SOURCE_DIR.is_dir():
+        PINNED_DONE_PNG_DIR.mkdir(parents=True, exist_ok=True)
+        moved_count = 0
+        for p in PINNED_SOURCE_DIR.glob("*.png"):
+            try:
+                dest_file = PINNED_DONE_PNG_DIR / p.name
+                # 如果目標資料夾已有同名檔案，直接覆蓋歸檔
+                shutil.move(str(p), str(dest_file))
+                moved_count += 1
+            except Exception as e:
+                print(f"[error] 歸檔搬移 PNG 失敗 {p.name}: {e}")
+        if moved_count > 0:
+            print(f"[ok] Archiving：已將 {moved_count} 張原始 PNG 成功搬移至 已完成PNG 資料夾")
+
     images_root = (args.images_dir or default_images_root()).resolve()
     if not images_root.is_dir():
         images_root = root / "assets" / "images"
-    inline_pending = iter_raster_image_files(images_root) if images_root.is_dir() else []
+    inline_pending = count_raster_images(images_root)
     if inline_pending:
-        print(f"[..] 就地 WebP：{images_root}（{len(inline_pending)} 張）…")
+        print(f"[..] 就地 WebP：{images_root}（{inline_pending} 張）…")
         i_ok, i_fail = convert_images_dir_to_webp(images_root, quality=DEFAULT_QUALITY)
         conv_ok += i_ok
         conv_fail += i_fail
         print(f"[ok] 就地 WebP：成功 {i_ok}，失敗 {i_fail}")
 
-    webp_scan_root = images_root if images_root.is_dir() else (root / "assets" / "images")
-    webp_rels = scan_webp_images(root, webp_scan_root)
-    web_refs = ["/" + p.replace("\\", "/") for p in webp_rels]
+    # 強制鎖定只掃描 Sample 目錄（排除 LOGO/kimchi/mochi 等 assets/images 根目錄圖片）
+    sample_dir = (DEFAULT_IMAGES_DIR / "Sample").resolve()
+    resolved_repo_root = root.resolve()
+    web_refs: list[str] = []
+    if sample_dir.is_dir():
+        for p in sorted(sample_dir.rglob("*.webp")):
+            if not p.is_file():
+                continue
+            try:
+                rel_path = p.resolve().relative_to(resolved_repo_root)
+                web_refs.append(f"/{rel_path.as_posix()}")
+            except ValueError:
+                pass
 
     articles_payload = {
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -348,7 +426,7 @@ def main() -> None:
 
     print(f"[ok] articles: {len(articles)} markdown file(s)")
     print(f"[ok] glb: {len(glb_paths)} file(s) under assets/glb/")
-    print(f"[ok] reference images: {len(web_refs)} .webp under assets/images/")
+    print(f"[ok] reference images: {len(web_refs)} .webp under assets/images/Sample/")
     if glb_paths:
         print(f"     modelViewer.src -> {merged['modelViewer']['src']}")
     else:
