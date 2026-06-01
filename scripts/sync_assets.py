@@ -3,6 +3,7 @@
 """
 Scan 3Dlectures/**/*.md and assets/glb/**/*.glb;
 將 Fan3cyAssets/2dto3d 內 PNG 轉為 WebP 寫入 assets/images/Sample（quality=90）；
+(新增) 僅當對應的 .glb 存在於 simple 目錄時，才進行轉換與歸檔；
 並就地轉換 assets/images/ 內殘留的 .png / .jpg / .jpeg；
 最後掃描所有 .webp 寫入 reference-images.json；合併 config.json 與 articles.json。
 """
@@ -24,14 +25,19 @@ DEFAULT_QUALITY = 90
 DEFAULT_IMAGES_DIR = Path(__file__).resolve().parent.parent / "assets" / "images"
 
 
-def convert_source_dir_to_dest_webp(src_dir: Path, dest_dir: Path, quality: int = 90):
-    """將來源資料夾內的所有 PNG 轉成 WebP 輸出到目標資料夾"""
+def convert_source_dir_to_dest_webp(src_dir: Path, dest_dir: Path, glb_dir: Path, quality: int = 90):
+    """將來源資料夾內的 PNG 轉成 WebP，前提是對應的 GLB 必須存在"""
     if not src_dir.is_dir():
         print(f"[warn] 來源路徑不存在: {src_dir}")
         return 0, 0
     dest_dir.mkdir(parents=True, exist_ok=True)
     ok, fail = 0, 0
     for p in src_dir.glob("*.png"):
+        # Validation Check: 檢查對應的 .glb 是否存在
+        glb_file = glb_dir / (p.stem + ".glb")
+        if not glb_file.is_file():
+            continue # 如果冇 3D 模型，直接跳過，唔轉 WebP
+            
         try:
             img = Image.open(p)
             out_path = dest_dir / (p.stem + ".webp")
@@ -72,7 +78,7 @@ def count_raster_images(directory: Path) -> int:
 
 
 def count_source_pngs(src_dir: Path) -> int:
-    """統計來源目錄頂層 PNG 數量（與 convert_source_dir_to_dest_webp 一致）。"""
+    """統計來源目錄頂層 PNG 數量。"""
     if not src_dir.is_dir():
         return 0
     return sum(1 for _ in src_dir.glob("*.png"))
@@ -97,6 +103,10 @@ PINNED_DEST_DIR = Path(
 )
 PINNED_DONE_PNG_DIR = Path(
     r"C:\Users\User\Desktop\Fan3cyForge\Fan3cyAssets\assets\images\已完成PNG"
+)
+# 新增: Web 端的 GLB 目錄，用作閘口驗證
+PINNED_GLB_SIMPLE_DIR = Path(
+    r"C:\Users\User\Desktop\Fan3cyForge\fan3cyforge.github.io\assets\glb\simple"
 )
 
 # Requirement 3: 首頁 3D 預覽僅保留 kimchi/mochi
@@ -352,23 +362,31 @@ def main() -> None:
 
     source_dir = PINNED_SOURCE_DIR.resolve()
     dest_dir = PINNED_DEST_DIR.resolve()
+    glb_simple_dir = PINNED_GLB_SIMPLE_DIR.resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
     src_pending = count_source_pngs(source_dir)
     print(
-        f"[..] 2dto3d→Sample：{source_dir} → {dest_dir}（{src_pending} 張, q={DEFAULT_QUALITY}）…"
+        f"[..] 2dto3d→Sample：{source_dir} → {dest_dir}（{src_pending} 張, 驗證 GLB, q={DEFAULT_QUALITY}）…"
     )
+    
+    # 傳入 glb_simple_dir 作為驗證
     conv_ok, conv_fail = (
-        convert_source_dir_to_dest_webp(source_dir, dest_dir, quality=DEFAULT_QUALITY)
+        convert_source_dir_to_dest_webp(source_dir, dest_dir, glb_simple_dir, quality=DEFAULT_QUALITY)
         if src_pending
         else (0, 0)
     )
-    print(f"[ok] 2dto3d→Sample WebP：成功 {conv_ok}，失敗 {conv_fail}")
+    print(f"[ok] 2dto3d→Sample WebP：成功轉出 {conv_ok} 張，失敗 {conv_fail}")
 
-    # === 增強功能：自動歸檔已處理的原始 PNG ===
+    # === 增強功能：自動歸檔已處理的原始 PNG (同樣加入 GLB 驗證) ===
     if PINNED_SOURCE_DIR.is_dir():
         PINNED_DONE_PNG_DIR.mkdir(parents=True, exist_ok=True)
         moved_count = 0
         for p in PINNED_SOURCE_DIR.glob("*.png"):
+            # Validation Check: GLB 存在先准搬走
+            glb_file = glb_simple_dir / (p.stem + ".glb")
+            if not glb_file.is_file():
+                continue
+                
             try:
                 dest_file = PINNED_DONE_PNG_DIR / p.name
                 # 如果目標資料夾已有同名檔案，直接覆蓋歸檔
@@ -377,7 +395,7 @@ def main() -> None:
             except Exception as e:
                 print(f"[error] 歸檔搬移 PNG 失敗 {p.name}: {e}")
         if moved_count > 0:
-            print(f"[ok] Archiving：已將 {moved_count} 張原始 PNG 成功搬移至 已完成PNG 資料夾")
+            print(f"[ok] Archiving：已將 {moved_count} 張生成成功的原始 PNG 搬移至 已完成PNG 資料夾")
 
     images_root = (args.images_dir or default_images_root()).resolve()
     if not images_root.is_dir():

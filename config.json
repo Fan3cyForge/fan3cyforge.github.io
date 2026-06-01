@@ -17,7 +17,7 @@
   },
   "localModelNote": "將自有 .glb 放入 /assets/glb/ 後，可把 modelViewer.src 改為 \"/assets/glb/your-model.glb\"（GitHub Pages 區分大小寫）。",
   "syncMeta": {
-    "generatedAt": "2026-05-26T02:32:45+00:00",
+    "generatedAt": "2026-06-01T01:12:05+00:00",
     "glbCount": 2
   }
 }

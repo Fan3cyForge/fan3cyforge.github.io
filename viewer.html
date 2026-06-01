@@ -74,10 +74,20 @@
             min-height: 240px;
         }
         #f3f-model-slot.f3f-visible { display: block; }
+        .f3f-model-wrap {
+            position: relative;
+        }
         model-viewer.f3f-mv {
             width: 100%;
             height: min(42vh, 360px);
             background: linear-gradient(180deg, #010409, #0d1117);
+        }
+        #f3f-toggle-btn.f3f-mv-toggle {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            z-index: 5;
+            font-size: 0.82rem;
         }
         #f3f-viewer-main.f3f-prose {
             max-width: 880px;
@@ -120,7 +130,26 @@
                 <span id="f3f-article-meta" class="f3f-muted"></span>
             </div>
             <div id="f3f-model-slot" aria-hidden="true">
-                <model-viewer class="f3f-mv" id="f3f-model-viewer" camera-controls auto-rotate interaction-prompt="none" shadow-intensity="1"></model-viewer>
+                <div class="f3f-model-wrap">
+                    <model-viewer
+                        class="f3f-mv"
+                        id="f3f-model-viewer"
+                        camera-controls
+                        auto-rotate
+                        interaction-prompt="none"
+                        shadow-intensity="2"
+                        shadow-softness="0.3"
+                        exposure="1.2"
+                        environment-image="neutral"
+                    ></model-viewer>
+                    <button
+                        type="button"
+                        id="f3f-toggle-btn"
+                        class="f3f-btn f3f-mv-toggle"
+                        style="display:none;"
+                        aria-label="切換 3D 觀賞模式"
+                    >🗿 切換灰模手辦</button>
+                </div>
             </div>
             <article id="f3f-viewer-main" class="f3f-prose">載入正文…</article>
         </div>
@@ -135,6 +164,152 @@
             var navToggle = document.getElementById("f3f-nav-toggle");
             var navBackdrop = document.getElementById("f3f-nav-backdrop");
             var sidebarEl = document.getElementById("f3f-sidebar");
+            var materialCache = [];
+            var currentVisualMode = "gray";
+
+            function configureModelViewerLighting(mv) {
+                if (!mv) return;
+                mv.setAttribute("shadow-intensity", "2");
+                mv.setAttribute("shadow-softness", "0.3");
+                mv.setAttribute("exposure", "1.2");
+                mv.setAttribute("environment-image", "neutral");
+            }
+
+            function updateToggleButtonLabel() {
+                var btn = document.getElementById("f3f-toggle-btn");
+                if (!btn) return;
+                btn.textContent =
+                    currentVisualMode === "gray"
+                        ? "👁️ 觀賞彩色模式"
+                        : "🗿 切換灰模手辦";
+            }
+
+            function setToggleButtonVisible(visible) {
+                var btn = document.getElementById("f3f-toggle-btn");
+                if (!btn) return;
+                btn.style.display = visible ? "" : "none";
+            }
+
+            function resetMaterialPipeline() {
+                materialCache = [];
+                currentVisualMode = "gray";
+                updateToggleButtonLabel();
+            }
+
+            function safeBackupMaterial(mat) {
+                if (!mat || !mat.pbrMetallicRoughness) return null;
+                var pbr = mat.pbrMetallicRoughness;
+                var baseColorFactor = [1, 1, 1, 1];
+                try {
+                    if (pbr.baseColorFactor && pbr.baseColorFactor.length === 4) {
+                        baseColorFactor = pbr.baseColorFactor.slice();
+                    }
+                } catch (e) { /* keep default */ }
+
+                var baseColorTexture = null;
+                try {
+                    if (pbr.baseColorTexture && pbr.baseColorTexture.texture) {
+                        baseColorTexture = pbr.baseColorTexture.texture;
+                    }
+                } catch (e) { /* no texture */ }
+
+                return {
+                    pbr: pbr,
+                    baseColorFactor: baseColorFactor,
+                    metallicFactor: typeof pbr.metallicFactor === "number" ? pbr.metallicFactor : 1,
+                    roughnessFactor: typeof pbr.roughnessFactor === "number" ? pbr.roughnessFactor : 1,
+                    baseColorTexture: baseColorTexture,
+                };
+            }
+
+            function backupModelMaterials(mv) {
+                materialCache = [];
+                if (!mv || !mv.model || !mv.model.materials || !mv.model.materials.length) {
+                    return;
+                }
+                mv.model.materials.forEach(function (mat) {
+                    var entry = safeBackupMaterial(mat);
+                    if (entry) materialCache.push(entry);
+                });
+            }
+
+            function applyVisualMode(mode) {
+                if (mode !== "gray" && mode !== "color") return;
+                if (!materialCache.length) return;
+
+                currentVisualMode = mode;
+
+                if (mode === "gray") {
+                    materialCache.forEach(function (entry) {
+                        var pbr = entry.pbr;
+                        if (!pbr) return;
+                        try {
+                            pbr.setBaseColorFactor([0.8, 0.8, 0.8, 1.0]);
+                            pbr.setMetallicFactor(0.1);
+                            pbr.setRoughnessFactor(0.7);
+                            if (pbr.baseColorTexture) {
+                                pbr.baseColorTexture.setTexture(null);
+                            }
+                        } catch (e) {
+                            console.warn("[f3f] gray mode apply failed:", e);
+                        }
+                    });
+                } else {
+                    materialCache.forEach(function (entry) {
+                        var pbr = entry.pbr;
+                        if (!pbr) return;
+                        try {
+                            pbr.setBaseColorFactor(entry.baseColorFactor);
+                            pbr.setMetallicFactor(entry.metallicFactor);
+                            pbr.setRoughnessFactor(entry.roughnessFactor);
+                            if (pbr.baseColorTexture) {
+                                pbr.baseColorTexture.setTexture(entry.baseColorTexture);
+                            }
+                        } catch (e) {
+                            console.warn("[f3f] color mode restore failed:", e);
+                        }
+                    });
+                }
+
+                updateToggleButtonLabel();
+            }
+
+            function toggleVisualMode() {
+                applyVisualMode(currentVisualMode === "gray" ? "color" : "gray");
+            }
+
+            function onModelViewerLoaded() {
+                var mv = document.getElementById("f3f-model-viewer");
+                if (!mv || !mv.model) return;
+                resetMaterialPipeline();
+                backupModelMaterials(mv);
+                if (materialCache.length) {
+                    applyVisualMode("gray");
+                    setToggleButtonVisible(true);
+                } else {
+                    setToggleButtonVisible(false);
+                }
+            }
+
+            function initModelViewerPipeline() {
+                var mv = document.getElementById("f3f-model-viewer");
+                var toggleBtn = document.getElementById("f3f-toggle-btn");
+                if (!mv) return;
+
+                configureModelViewerLighting(mv);
+
+                if (toggleBtn && !toggleBtn.dataset.f3fBound) {
+                    toggleBtn.dataset.f3fBound = "1";
+                    toggleBtn.addEventListener("click", toggleVisualMode);
+                }
+
+                if (!mv.dataset.f3fLoadBound) {
+                    mv.dataset.f3fLoadBound = "1";
+                    mv.addEventListener("load", onModelViewerLoaded);
+                }
+            }
+
+            initModelViewerPipeline();
 
             function setViewerNavOpen(open) {
                 document.body.classList.toggle("f3f-viewer-nav-open", open);
@@ -240,8 +415,13 @@
                     slot.classList.remove("f3f-visible");
                     slot.setAttribute("aria-hidden", "true");
                     mv.removeAttribute("src");
+                    resetMaterialPipeline();
+                    setToggleButtonVisible(false);
                     return;
                 }
+                resetMaterialPipeline();
+                setToggleButtonVisible(false);
+                configureModelViewerLighting(mv);
                 mv.setAttribute("src", url);
                 slot.classList.add("f3f-visible");
                 slot.setAttribute("aria-hidden", "false");
